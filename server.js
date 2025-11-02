@@ -1,5 +1,4 @@
-// server.js  (ESM version for Render)
-
+// server.js — ESM, with aliases for config
 import http from "http";
 import fs from "fs";
 import path from "path";
@@ -10,11 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 10000;
 
-// folders
 const SRC_DIR = path.join(__dirname, "src");
 const LOG_DIR = path.join(__dirname, "logger");
 
-// make sure logger dir exists
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
@@ -45,13 +42,15 @@ function writeCsvRow(obj) {
     "cefr",
     "question",
     "transcript",
-    "wpm",
+    "wpm"
   ];
   const exists = fs.existsSync(file);
-  const line = header.map((k) => (obj[k] ?? "").toString().replace(/"/g, '""'));
+  const line = header.map((k) =>
+    (obj[k] ?? "").toString().replace(/"/g, '""')
+  );
   const row = `"${line.join('","')}"\n`;
   if (!exists) {
-    fs.writeFileSync(file, `"${header.join('","')}"\n` + row, "utf8");
+    fs.writeFileSync(`"${header.join('","')}"\n`.replace(/""/g,'"') + row, "utf8");
   } else {
     fs.appendFileSync(file, row, "utf8");
   }
@@ -67,42 +66,56 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // normalize path (strip query)
-  const fullUrl = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = fullUrl.pathname;
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = url.pathname;
 
-  // GET /config/widget
-  if (req.method === "GET" && pathname === "/config/widget") {
+  // --- CONFIG (multiple aliases) ---
+  if (
+    req.method === "GET" &&
+    (
+      pathname === "/config/widget" ||
+      pathname === "/config" ||
+      pathname === "/config.json"
+    )
+  ) {
     const data = readJson("config.json", {
       editable: {},
       theme: "apple",
-      api: { baseUrl: "https://app.myspeakingscore.com", key: "", secret: "" },
+      api: {
+        enabled: true,
+        baseUrl: "https://app.myspeakingscore.com",
+        key: "",
+        secret: ""
+      },
       audioMinSeconds: 30,
       audioMaxSeconds: 61,
-      logger: { enabled: false, url: "" },
+      logger: {
+        enabled: false,
+        url: "https://msswidget-dev.onrender.com/log/submission"
+      }
     });
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(data));
   }
 
-  // GET /config/forms
+  // --- FORMS ---
   if (req.method === "GET" && pathname === "/config/forms") {
     const data = readJson("form.json", {
       headline: "Practice TOEFL Speaking Test",
-      survey: ["Tell me about your hometown."],
+      survey: ["Tell me about your hometown."]
     });
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(data));
   }
 
-  // GET /config/images
+  // --- IMAGES ---
   if (req.method === "GET" && pathname === "/config/images") {
     const data = readJson("image.json", {});
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(data));
   }
 
-  // POST /log/submission
+  // --- LOGGING ---
   if (req.method === "POST" && pathname === "/log/submission") {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
@@ -110,10 +123,15 @@ const server = http.createServer((req, res) => {
       try {
         const parsed = JSON.parse(body || "{}");
         parsed.timestamp = parsed.timestamp || new Date().toISOString();
-        parsed.ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+        parsed.ip =
+          req.headers["x-forwarded-for"] ||
+          req.socket.remoteAddress ||
+          "";
         writeCsvRow(parsed);
         res.writeHead(200, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ ok: true, file: "logger/submissions.csv" }));
+        return res.end(
+          JSON.stringify({ ok: true, file: "logger/submissions.csv" })
+        );
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ ok: false, error: "bad json" }));
@@ -122,7 +140,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // default
+  // fallback
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "not found", path: pathname }));
 });
