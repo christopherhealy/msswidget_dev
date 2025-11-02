@@ -97,7 +97,7 @@
 /* ------------------------------------------------------------------
    CONFIG
 ------------------------------------------------------------------ */
-const API_BASE = "https://msswidget-dev.onrender.com";  // ← our Render service
+const API_BASE = "https://msswidget-dev.onrender.com";  // Render service
 
 /* ------------------------------------------------------------------
    STATE
@@ -122,7 +122,6 @@ let progressStart = 0;
 ------------------------------------------------------------------ */
 async function loadAll() {
   try {
-    // fetch three files from Render
     const [cfgRes, formRes, imgRes] = await Promise.all([
       fetch(`${API_BASE}/config/widget?ts=${Date.now()}`),
       fetch(`${API_BASE}/config/forms?ts=${Date.now()}`),
@@ -132,6 +131,10 @@ async function loadAll() {
     CONFIG = cfgRes.ok ? await cfgRes.json() : {};
     FORM   = formRes.ok ? await formRes.json() : { survey: ["Tell me about your hometown."] };
     IMAGE  = imgRes.ok ? await imgRes.json() : {};
+
+    console.log("[MSS] loaded config:", CONFIG);
+    console.log("[MSS] loaded form:", FORM);
+    console.log("[MSS] loaded images:", IMAGE);
 
     applyThemeFromConfig(CONFIG);
     applyBranding(FORM, IMAGE, CONFIG);
@@ -344,6 +347,7 @@ async function submitRecording() {
   const base = (CONFIG?.api?.baseUrl || "").trim();
   const key = (CONFIG?.api?.key || "").trim();
   const secret = (CONFIG?.api?.secret || "").trim();
+  const doCheck = CONFIG?.api?.check === true; // <-- only pre-check if config says so
 
   if (!base || !key || !secret) {
     setStatus("API missing in config from Render (baseUrl/key/secret)", false);
@@ -353,14 +357,16 @@ async function submitRecording() {
   startProgress("Submitting");
 
   try {
-    // Optional pre-check (yours): GET /api/check-access
-    const check = await fetch(base.replace(/\/+$/,'') + "/api/check-access", {
-      headers: { "API-KEY": key }
-    });
-    if (!check.ok) {
-      stopProgress("Access failed");
-      setStatus("Access check failed", false);
-      return;
+    // optional pre-check (toggle in Render config: "api": { ..., "check": true })
+    if (doCheck) {
+      const check = await fetch(base.replace(/\/+$/,'') + "/api/check-access", {
+        headers: { "API-KEY": key }
+      });
+      if (!check.ok) {
+        stopProgress("Access failed");
+        setStatus("Access check failed", false);
+        return;
+      }
     }
 
     const fd = new FormData();
@@ -381,7 +387,6 @@ async function submitRecording() {
     if (res.ok) {
       stopProgress("Done");
       setStatus("Submitted ✅", true);
-      // try to log to Render
       await logToRender(json, audio);
     } else {
       stopProgress("Failed");
@@ -398,8 +403,17 @@ async function submitRecording() {
    LOGGING TO RENDER
 ------------------------------------------------------------------ */
 async function logToRender(resultBody, audioBlob) {
-  const urlFromConfig = CONFIG?.logger?.url;
-  const url = urlFromConfig || `${API_BASE}/log/submission`;
+  // prefer Render; ignore localhost
+  const cfgUrl = CONFIG?.logger?.url || "";
+  let url = `${API_BASE}/log/submission`; // default
+  if (
+    cfgUrl.startsWith("https://") &&
+    !cfgUrl.includes("localhost") &&
+    !cfgUrl.includes("127.0.0.1")
+  ) {
+    url = cfgUrl;
+  }
+
   const payload = {
     timestamp: new Date().toISOString(),
     toefl: resultBody?.toefl ?? resultBody?.toefl_score ?? "",
