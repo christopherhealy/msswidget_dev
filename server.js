@@ -1,101 +1,129 @@
-// server.js — Render service for MSS Widget
-import http from "http";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+// server.js — msswidget-dev
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { URL } = require("url");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const PORT = process.env.PORT || 10000;
 
-// location of your JSON files
+// our JSONs live in /src
 const SRC_DIR = path.join(__dirname, "src");
-
-// ensure logger directory exists (for CSV logs)
 const LOG_DIR = path.join(__dirname, "logger");
-if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
 
-// port Render assigns automatically
-const PORT = process.env.PORT || 3000;
-
-/* ------------------------- Utility Functions ------------------------- */
-function readJson(fileName) {
-  const filePath = path.join(SRC_DIR, fileName);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+// ensure logger dir
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
-function writeCsv(logName, payload) {
-  const filePath = path.join(LOG_DIR, `${logName}.csv`);
-  const addHeader = !fs.existsSync(filePath);
-  const stream = fs.createWriteStream(filePath, { flags: "a" });
-  if (addHeader) stream.write("timestamp,logType,payload\n");
-  stream.write(`${new Date().toISOString()},${logName},${JSON.stringify(payload)}\n`);
-  stream.end();
+function readJson(basename, fallback) {
+  const file = path.join(SRC_DIR, basename);
+  if (!fs.existsSync(file)) return fallback;
+  try {
+    const raw = fs.readFileSync(file, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("JSON parse failed for", basename, e);
+    return fallback;
+  }
 }
 
-/* ----------------------------- HTTP Server ---------------------------- */
+function writeCsvRow(obj) {
+  const file = path.join(LOG_DIR, "submissions.csv");
+  const header = [
+    "timestamp",
+    "ip",
+    "fileName",
+    "lengthSec",
+    "submitTime",
+    "toefl",
+    "ielts",
+    "pte",
+    "cefr",
+    "question",
+    "transcript",
+    "wpm",
+  ];
+  const exists = fs.existsSync(file);
+  const line = header.map((k) => (obj[k] ?? "").toString().replace(/"/g, '""'));
+  const row = `"${line.join('","')}"\n`;
+  if (!exists) {
+    fs.writeFileSync(file, `"${header.join('","')}"\n` + row, "utf8");
+  } else {
+    fs.appendFileSync(file, row, "utf8");
+  }
+}
+
 const server = http.createServer((req, res) => {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
   }
 
-  // 1) CONFIG endpoints
-  // /config/widget  -> src/config.json
-  // /config/forms   -> src/form.json
-  // /config/images  -> src/image.json
-  if (req.method === "GET" && req.url.startsWith("/config/")) {
-    const key = req.url.replace("/config/", "").trim();
+  // normalize URL (strip query)
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = url.pathname;
 
-    const map = {
-      widget: "config.json",
-      forms: "form.json",
-      images: "image.json",
-    };
-
-    const fileName = map[key];
-    const data = fileName ? readJson(fileName) : null;
-
-    if (!data) {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "config not found", key }));
-    }
-
+  // GET /config/widget
+  if (req.method === "GET" && pathname === "/config/widget") {
+    const data = readJson("config.json", {
+      editable: {},
+      theme: "apple",
+      api: { baseUrl: "https://app.myspeakingscore.com", key: "", secret: "" },
+      audioMinSeconds: 30,
+      audioMaxSeconds: 61,
+      logger: { enabled: false, url: "" },
+    });
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(data));
   }
 
-  // 2) LOG endpoints
-  // POST /log/qa, /log/report, /log/submission
-  if (req.method === "POST" && req.url.startsWith("/log/")) {
-    const logName = req.url.replace("/log/", "").trim();
+  // GET /config/forms
+  if (req.method === "GET" && pathname === "/config/forms") {
+    const data = readJson("form.json", {
+      headline: "Practice TOEFL Speaking Test",
+      survey: ["Tell me about your hometown."],
+    });
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify(data));
+  }
+
+  // GET /config/images
+  if (req.method === "GET" && pathname === "/config/images") {
+    const data = readJson("image.json", {});
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify(data));
+  }
+
+  // POST /log/submission
+  if (req.method === "POST" && pathname === "/log/submission") {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
       try {
-        const payload = JSON.parse(body || "{}");
-        writeCsv(logName, payload);
+        const parsed = JSON.parse(body || "{}");
+        // add ip & timestamp if missing
+        parsed.timestamp = parsed.timestamp || new Date().toISOString();
+        parsed.ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+        writeCsvRow(parsed);
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-      } catch (err) {
+        return res.end(JSON.stringify({ ok: true, file: "logger/submissions.csv" }));
+      } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: false, error: "invalid JSON" }));
+        return res.end(JSON.stringify({ ok: false, error: "bad json" }));
       }
     });
     return;
   }
 
-  // 3) Default 404
+  // default
   res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "not found" }));
+  res.end(JSON.stringify({ error: "not found", path: pathname }));
 });
 
-/* ----------------------------- Start Server --------------------------- */
 server.listen(PORT, () => {
   console.log(`✅ MSS Widget service running on port ${PORT}`);
 });
