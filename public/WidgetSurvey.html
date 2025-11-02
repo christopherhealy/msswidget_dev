@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Speaking Score – All-in-One Question Editor</title>
+<link rel="stylesheet" href="https://codebot.myspeakingscore.com/dynamic-widget-vue.css">
+<style>
+  :root { --mss-blue:#1a5cff; --mss-text:#222; --mss-muted:#6b7280; --mss-edge:#e5e7eb; }
+  body{
+    font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:#f7f7f8;margin:0;display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;padding:24px;gap:18px;
+  }
+  .card{
+    width:980px; max-width:95vw; background:#fff; border:1px solid var(--mss-edge);
+    border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.06); overflow:hidden;
+  }
+  .head{display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;border-bottom:1px solid var(--mss-edge)}
+  .title{font-weight:700}
+  .muted{color:#6b7280; font-size:12px}
+  .body{padding:14px}
+
+  /* List rows */
+  .row{
+    display:grid; grid-template-columns: 48px 1fr auto; align-items:start;
+    gap:12px; padding:10px 12px; border:1px solid var(--mss-edge); border-radius:12px;
+    margin-bottom:10px; background:#fff;
+    transition:border-color .15s, box-shadow .15s, opacity .15s;
+  }
+  .row.dragging{ opacity:.7; border-color:#93c5fd; box-shadow:0 6px 20px rgba(2,132,199,.15); }
+  .placeholder{
+    height:64px; border:2px dashed #93c5fd; border-radius:12px; background:#eff6ff;
+    margin-bottom:10px;
+  }
+
+  /* Drag handle (index circle) */
+  .idx{
+    width:40px;height:40px;border-radius:10px;border:1px solid var(--mss-edge);
+    display:flex;align-items:center;justify-content:center;font-weight:600;background:#f9fafb;
+    user-select:none; cursor:grab;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .idx:active{ cursor:grabbing; background:#eef2ff; border-color:#c7d2fe; color:#374151; }
+
+  .qtext{white-space:pre-line}
+  .qfirst{font-weight:600}
+
+  .ctrls{display:flex;gap:6px;flex-wrap:wrap}
+  .btn{
+    border-radius:999px; padding:8px 10px; border:1px solid var(--mss-edge);
+    background:#fff; cursor:pointer; font-weight:600; font-size:13px;
+  }
+  .btn.primary{background:var(--mss-blue); color:#fff; border-color:transparent}
+  .btn.ghost{background:#fff}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .toolbar .spacer{flex:1}
+  #status{font-size:13px;margin-left:auto}
+
+  /* Modals: add/edit */
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2100}
+  .modal{width:min(700px,95vw);background:#fff;border:1px solid var(--mss-edge);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden}
+  .modalHead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--mss-edge)}
+  .modalBody{padding:12px}
+  .modalFoot{display:flex;gap:8px;justify-content:flex-end;padding:12px;border-top:1px solid var(--mss-edge)}
+  .ta{width:100%;min-height:200px;border:1px solid var(--mss-edge);border-radius:12px;padding:12px;font:inherit}
+
+  /* Finish / Confirm */
+  .finishOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2100}
+  .finishDlg{width:min(420px,94vw);background:#fff;border:1px solid var(--mss-edge);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:18px}
+  .finishDlg h3{margin:0 0 8px 0;font-size:16px}
+  .finishDlg p{margin:0 0 12px 0;color:#374151;font-size:14px}
+  .finishBtns{display:flex;gap:8px;justify-content:flex-end}
+
+  .confirmOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2200}
+  .confirmDlg{width:min(420px,94vw);background:#fff;border:1px solid var(--mss-edge);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:18px}
+  .confirmDlg h3{margin:0 0 8px 0;font-size:16px}
+  .confirmDlg p{margin:0 0 12px 0;color:#374151;font-size:14px}
+  .confirmBtns{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div>
+        <div class="title">All-in-One Questions</div>
+        <div class="muted">Drag with the index circle, edit in place, add/remove, import/export. Saves only the <code>survey</code> order & content.</div>
+      </div>
+      <div class="muted" id="meta">Loading…</div>
+    </div>
+
+    <div class="body">
+      <!-- Top toolbar -->
+      <div class="toolbar" style="margin-bottom:10px;">
+        <button id="addBtnTop" class="btn">＋ Add</button>
+
+        <div class="spacer"></div>
+
+        <label class="btn ghost" style="display:inline-flex;align-items:center;gap:8px;">
+          <input id="importJson" type="file" accept="application/json" style="display:none;"/>
+          Import
+        </label>
+
+        <label class="btn ghost" style="display:inline-flex;align-items:center;gap:8px;">
+          <input id="importCsv" type="file" accept=".csv,text/csv" style="display:none;"/>
+          CSV Import
+        </label>
+
+        <button id="exportBtnTop" class="btn">Export</button>
+        <button id="saveToFileBtnTop" class="btn">Save to file…</button>
+        <button id="finishedBtnTop" class="btn primary">Finished…</button>
+        <span id="status" class="muted"></span>
+      </div>
+
+      <div id="list"></div>
+
+      <!-- Bottom toolbar (same actions) -->
+      <div class="toolbar" style="margin-top:10px;">
+        <button id="addBtnBottom" class="btn">＋ Add</button>
+
+        <div class="spacer"></div>
+
+        <button id="exportBtnBottom" class="btn">Export</button>
+        <button id="saveToFileBtnBottom" class="btn">Save to file…</button>
+        <button id="finishedBtnBottom" class="btn primary">Finished…</button>
+      </div>
+    </div>
+
+    <div class="footer" style="padding:12px 16px; border-top:1px solid var(--mss-edge); font-size:12px; color:#6b7280">
+      Tip: <b>Export</b> downloads <code>form.json</code>. <b>Save to file…</b> overwrites the chosen file without “form (3)”.
+    </div>
+  </div>
+
+  <!-- Add/Edit modal -->
+  <div id="aeOverlay" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Add or Edit Question">
+      <div class="modalHead"><div id="aeTitle" class="title">Add Question</div></div>
+      <div class="modalBody">
+        <textarea id="aeTextarea" class="ta" placeholder="Type the question here…"></textarea>
+      </div>
+      <div class="modalFoot">
+        <button id="aeCancel" class="btn">Cancel</button>
+        <button id="aeSave" class="btn">Save</button>
+        <button id="aeSaveNew" class="btn">Save & New</button>
+        <button id="aeClose" class="btn primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finished dialog -->
+  <div id="finishOverlay" class="finishOverlay" aria-hidden="true">
+    <div class="finishDlg">
+      <h3>Do you want to save your changes before leaving?</h3>
+      <p><b>Save</b> writes to <code>form.json</code> (clean filename) or downloads if blocked.</p>
+      <div class="finishBtns">
+        <button id="finishCancel" class="btn" type="button">Cancel</button>
+        <button id="finishNoSave" class="btn" type="button">Don't Save</button>
+        <button id="finishSave" class="btn primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm dialog (remove / unsaved close) -->
+  <div id="confirmOverlay" class="confirmOverlay" aria-hidden="true">
+    <div class="confirmDlg">
+      <h3 id="confirmTitle">Confirm</h3>
+      <p id="confirmMsg">Are you sure?</p>
+      <div class="confirmBtns">
+        <button id="confirmCancel" class="btn" type="button">Cancel</button>
+        <button id="confirmOk" class="btn primary" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // -------- State --------
+  let schema = null;
+  let survey = [];
+  let _fileHandle = null; // for File System Access API
+  let aeMode = 'add';     // 'add' | 'edit'
+  let aeIndex = -1;       // index for edit
+  let aeDirty = false;    // track unsaved text in modal
+
+  // -------- Helpers --------
+  function setStatus(msg, ok=true){
+    const el = document.getElementById('status');
+    el.textContent = (ok ? '✅ ' : '⚠️ ') + msg;
+    el.style.color = ok ? 'green' : '#b45309';
+    clearTimeout(setStatus._t);
+    setStatus._t = setTimeout(()=>{ el.textContent=''; }, 1800);
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function summarize(q){
+    const parts = String(q).split(/\n+/);
+    const head = escapeHtml(parts[0] || '');
+    const rest = escapeHtml(parts.slice(1).join('\n'));
+    return `<div class="qtext"><div class="qfirst">${head}</div>${rest ? `<div class="muted" style="margin-top:4px;white-space:pre-line">${rest}</div>` : ''}</div>`;
+  }
+  function getMerged(){ return { ...schema, survey: survey.slice() }; }
+
+  // Home-tab smart return
+  async function smartGoHome(){
+    let homeAlive = false;
+    try{
+      homeAlive = await new Promise((resolve)=>{
+        const ch = new BroadcastChannel('mss-home');
+        let answered = false;
+        ch.onmessage = (e)=>{
+          if (e?.data === 'mss:home:alive'){ answered = true; ch.postMessage('mss:home:pleaseFocus'); ch.close?.(); resolve(true); }
+        };
+        ch.postMessage('mss:home:ping');
+        setTimeout(()=>{ if (!answered) ch.close?.(); resolve(false); }, 300);
+      });
+    }catch{}
+    if (homeAlive){
+      try{ if (window.opener && !window.opener.closed) window.opener.focus(); }catch{}
+      window.close();
+      return;
+    }
+    window.location.href = 'index.html';
+  }
+
+  // -------- Render list --------
+  function move(idx, dir){
+    const j = idx + dir;
+    if (j < 0 || j >= survey.length) return;
+    const tmp = survey[idx]; survey[idx] = survey[j]; survey[j] = tmp;
+    render();
+  }
+  function moveTo(idx, dest){
+    if (dest < 0) dest = 0;
+    if (dest > survey.length - 1) dest = survey.length - 1;
+    if (idx === dest) return;
+    const item = survey.splice(idx,1)[0];
+    survey.splice(dest,0,item);
+    render();
+  }
+  function render(){
+    const list = document.getElementById('list');
+    if (!survey.length){
+      list.innerHTML = `<div class="muted">No questions found. Click <b>＋ Add</b> or use <b>Import</b>/<b>CSV Import</b>.</div>`;
+      return;
+    }
+    list.innerHTML = survey.map((q, i) => `
+      <div class="row" data-idx="${i}" draggable="true">
+        <div class="idx" title="Drag to reorder">${i+1}</div>
+        <div>${summarize(q)}</div>
+        <div class="ctrls">
+          <button class="btn" data-act="edit">Edit</button>
+          <button class="btn" data-act="top">Top</button>
+          <button class="btn" data-act="up">Up</button>
+          <button class="btn" data-act="down">Down</button>
+          <button class="btn" data-act="bottom">Bottom</button>
+          <button class="btn" data-act="remove">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Button actions
+    list.querySelectorAll('.row .btn').forEach(btn => {
+      btn.addEventListener('click', (e)=> {
+        const row = e.target.closest('.row');
+        const idx = Number(row.getAttribute('data-idx'));
+        const act = e.target.getAttribute('data-act');
+        if (act === 'edit') openEditModal(idx);
+        else if (act === 'up') move(idx,-1);
+        else if (act === 'down') move(idx, 1);
+        else if (act === 'top') moveTo(idx, 0);
+        else if (act === 'bottom') moveTo(idx, survey.length - 1);
+        else if (act === 'remove') confirmRemove(idx);
+      });
+    });
+
+    wireDnd(list);
+  }
+
+  // -------- Drag & drop (stable; must start on .idx handle) --------
+  function wireDnd(container){
+    let placeholder = null;
+    let draggingRow = null;
+    let dragSrcIndex = null;
+
+    container.querySelectorAll('.row').forEach(row => {
+      row.dataset.allow = "";
+      row.addEventListener('dragstart', onDragStart);
+      row.addEventListener('dragend', onDragEnd);
+      row.querySelector('.idx').addEventListener('pointerdown', () => { row.dataset.allow = "1"; }, {passive:true});
+    });
+
+    container.addEventListener('dragover', onDragOver);
+    container.addEventListener('drop', onDrop);
+
+    function onDragStart(e){
+      const row = e.currentTarget;
+      if (row.dataset.allow !== "1"){ e.preventDefault(); return; }
+      row.dataset.allow = "";
+
+      draggingRow = row;
+      dragSrcIndex = Number(row.getAttribute('data-idx'));
+      row.classList.add('dragging');
+
+      placeholder = document.createElement('div');
+      placeholder.className = 'placeholder';
+      placeholder.style.height = row.getBoundingClientRect().height + 'px';
+      row.after(placeholder);
+
+      e.dataTransfer.effectAllowed = 'move';
+      try {
+        e.dataTransfer.setData('text/plain', String(dragSrcIndex));
+        const h = row.querySelector('.idx') || row;
+        e.dataTransfer.setDragImage(h, 16, 16);
+      } catch {}
+    }
+    function onDragOver(e){
+      if (!draggingRow || !placeholder) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const after = getAfterRow(container, e.clientY);
+      if (after == null) container.appendChild(placeholder);
+      else container.insertBefore(placeholder, after);
+    }
+    function onDrop(e){
+      if (!draggingRow || !placeholder) return;
+      e.preventDefault();
+      let targetIndex = 0;
+      for (const child of container.children){
+        if (child === placeholder) break;
+        if (child.classList.contains('row')) targetIndex++;
+      }
+      const from = dragSrcIndex;
+      if (from < targetIndex) targetIndex--;
+      cleanup();
+      if (from == null || from === targetIndex) return;
+      const [m] = survey.splice(from, 1);
+      survey.splice(targetIndex, 0, m);
+      render();
+    }
+    function onDragEnd(){ cleanup(); }
+    function cleanup(){
+      container.querySelectorAll('.row').forEach(r => r.dataset.allow = "");
+      if (draggingRow) draggingRow.classList.remove('dragging');
+      draggingRow = null; dragSrcIndex = null;
+      if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+      placeholder = null;
+    }
+    function getAfterRow(container, y){
+      const rows = [...container.querySelectorAll('.row:not(.dragging)')];
+      return rows.reduce((closest, child)=>{
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height/2;
+        return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+  }
+
+  // -------- Add / Edit modals --------
+  function openAddModal(){
+    aeMode = 'add'; aeIndex = -1; aeDirty = false;
+    document.getElementById('aeTitle').textContent = 'Add Question';
+    document.getElementById('aeTextarea').value = '';
+    showOverlay('aeOverlay', true);
+  }
+  function openEditModal(index){
+    aeMode = 'edit'; aeIndex = index; aeDirty = false;
+    document.getElementById('aeTitle').textContent = 'Edit Question';
+    document.getElementById('aeTextarea').value = survey[index] || '';
+    showOverlay('aeOverlay', true);
+  }
+
+  function showOverlay(id, show){
+    const el = document.getElementById(id);
+    el.style.display = show ? 'flex' : 'none';
+    el.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
+
+  function wireAddEdit(){
+    const ta = document.getElementById('aeTextarea');
+    ta.addEventListener('input', ()=> aeDirty = true);
+
+    // Cancel = close without saving anything (no prompt)
+    document.getElementById('aeCancel').addEventListener('click', ()=>{
+      document.getElementById('aeTextarea').value = '';
+      aeDirty = false;
+      showOverlay('aeOverlay', false);
+    });
+
+    // Save (does not close; good for minor edits)
+    document.getElementById('aeSave').addEventListener('click', ()=>{
+      const v = ta.value.trim();
+      if (!v){ setStatus('Nothing to save', false); return; }
+      if (aeMode === 'add'){ survey.push(v); }
+      else if (aeMode === 'edit' && aeIndex > -1) { survey[aeIndex] = v; }
+      aeDirty = false;
+      render();
+      setStatus('Saved');
+    });
+
+    // Save & New (save then clear for the next entry)
+    document.getElementById('aeSaveNew').addEventListener('click', ()=>{
+      const v = ta.value.trim();
+      if (!v){ setStatus('Nothing to save', false); return; }
+      if (aeMode === 'edit' && aeIndex > -1) { survey[aeIndex] = v; }
+      else { survey.push(v); }
+      render();
+      ta.value = '';
+      aeMode = 'add'; aeIndex = -1; aeDirty = false;
+      setStatus('Saved. Ready for next.');
+    });
+
+    // Close (prompt if unsaved text)
+    document.getElementById('aeClose').addEventListener('click', async ()=>{
+      if (aeDirty && ta.value.trim()){
+        const choice = await triConfirm('Save your question?', 'No', 'Cancel', 'Save');
+        if (choice === 'save'){
+          const v = ta.value.trim();
+          if (aeMode === 'add') survey.push(v);
+          else if (aeMode === 'edit' && aeIndex > -1) survey[aeIndex] = v;
+          render();
+          aeDirty = false;
+          showOverlay('aeOverlay', false);
+          setStatus('Saved');
+        } else if (choice === 'nosave'){
+          aeDirty = false;
+          showOverlay('aeOverlay', false);
+        } else {
+          // cancel: stay open
+        }
+      } else {
+        showOverlay('aeOverlay', false);
+      }
+    });
+  }
+
+  // Remove with dialog
+  async function confirmRemove(index){
+    const ok = await twoBtnConfirm('Remove this question?', 'Cancel', 'Remove');
+    if (!ok) return;
+    survey.splice(index, 1);
+    render();
+    setStatus('Question removed');
+  }
+
+  // -------- Import / Export --------
+  // Export (download as form.json)
+  function exportJson(){
+    const merged = getMerged();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(merged, null, 2)], { type:'application/json' }));
+    a.setAttribute('download', 'form.json');
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+    setStatus('Exported');
+  }
+
+  // Import JSON (load selected)
+  function wireImportJson(){
+    const f = document.getElementById('importJson');
+    f.addEventListener('change', async (e)=>{
+      const file = e.target.files && e.target.files[0];
+      e.target.value = ''; // reset picker
+      if (!file) return;
+      try{
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON object.');
+        schema = parsed;
+        survey = Array.isArray(parsed.survey) ? parsed.survey.slice() : [];
+        setStatus('Imported JSON');
+        render();
+        document.getElementById('meta').textContent =
+          (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
+      }catch(err){
+        alert('Import failed: ' + err.message);
+      }
+    });
+  }
+
+  // CSV Import (single column, header auto-detect “Name/Title”; prompt Append/Replace)
+  function wireImportCsv(){
+    const f = document.getElementById('importCsv');
+    f.addEventListener('change', async (e)=>{
+      const file = e.target.files && e.target.files[0];
+      e.target.value = ''; // reset picker
+      if (!file) return;
+      let text = await file.text();
+      const rows = parseCSV(text);
+      if (!rows.length){ setStatus('CSV is empty', false); return; }
+
+      const col = findSingleDataColumn(rows);
+      if (col === -1){ alert('CSV must contain exactly one column with data.'); return; }
+
+      const first = String(rows[0][col] ?? '').trim().toLowerCase();
+      const hasHeader = (first === 'name' || first === 'title');
+
+      const start = hasHeader ? 1 : 0;
+      const questions = rows.slice(start).map(r => normalizeCell(r[col])).filter(Boolean);
+
+      if (!questions.length){ setStatus('No questions parsed', false); return; }
+
+      const choice = await triConfirm('Append to existing questions?', 'Replace', 'Cancel', 'Append');
+      if (choice === 'cancel') return;
+
+      if (choice === 'save'){ // right button label = Append
+        survey = survey.concat(questions);
+      } else if (choice === 'nosave'){ // left button label = Replace
+        survey = questions.slice();
+      }
+      render();
+      setStatus('CSV imported');
+    });
+  }
+
+  function normalizeCell(s){
+    if (s == null) return '';
+    let t = String(s).replace(/\r\n/g, '\n').trim();
+    t = t.replace(/\n+/g, ' // ');
+    t = t.replace(/\s*\/\/\s*/g, ' // ');
+    return t;
+  }
+
+  function parseCSV(text){
+    const rows = [];
+    let field = '', row = [], inQuotes = false;
+    for (let i=0; i<text.length; i++){
+      const c = text[i], next = text[i+1];
+      if (inQuotes){
+        if (c === '"' && next === '"'){ field += '"'; i++; }
+        else if (c === '"'){ inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"'){ inQuotes = true; }
+        else if (c === ','){ row.push(field); field = ''; }
+        else if (c === '\n'){ row.push(field); field = ''; rows.push(row); row = []; }
+        else if (c !== '\r'){ field += c; }
+      }
+    }
+    row.push(field); rows.push(row);
+    while (rows.length && rows[rows.length-1].every(v => String(v).trim() === '')) rows.pop();
+    return rows;
+  }
+
+  function findSingleDataColumn(rows){
+    let maxCols = Math.max(...rows.map(r => r.length));
+    let idx = -1;
+    for (let c=0;c<maxCols;c++){
+      let hasData = rows.some(r => r[c] != null && String(r[c]).trim() !== '');
+      if (hasData){ if (idx !== -1) return -1; idx = c; }
+    }
+    return idx;
+  }
+
+  // -------- Save (File System Access API) --------
+  async function saveToFilePicker(jsonObj, suggestedName='form.json'){
+    const blob = new Blob([JSON.stringify(jsonObj, null, 2)], { type:'application/json' });
+
+    if (!('showSaveFilePicker' in window)){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.setAttribute('download', suggestedName);
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+      return 'download';
+    }
+    try{
+      if (_fileHandle){
+        const perm = await _fileHandle.requestPermission({ mode:'readwrite' });
+        if (perm === 'granted'){
+          const w = await _fileHandle.createWritable();
+          await w.write(blob); await w.close(); return 'saved';
+        }
+      }
+      _fileHandle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description:'JSON', accept:{ 'application/json':['.json'] } }]
+      });
+      const w = await _fileHandle.createWritable();
+      await w.write(blob); await w.close();
+      return 'saved';
+    }catch(e){
+      console.warn('Save canceled/failed:', e);
+      return 'canceled';
+    }
+  }
+
+  // -------- Finished flow --------
+  function showFinishDialog(){
+    return new Promise(resolve=>{
+      const ov = document.getElementById('finishOverlay');
+      ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+      document.getElementById('finishSave').onclick   = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('save'); };
+      document.getElementById('finishNoSave').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('nosave'); };
+      document.getElementById('finishCancel').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('cancel'); };
+    });
+  }
+
+  async function finishedFlow(){
+    const choice = await showFinishDialog();
+    if (choice === 'save'){
+      const r = await saveToFilePicker(getMerged(), 'form.json');
+      if (r==='saved') setStatus('Saved to file');
+      else if (r==='download') setStatus('Downloaded');
+      await smartGoHome();
+    } else if (choice === 'nosave'){
+      await smartGoHome();
+    } else {
+      // cancel → stay here
+    }
+  }
+
+  // -------- Tiny dialog helpers --------
+  // two-button confirm: returns true if OK
+  function twoBtnConfirm(title, cancelLabel='Cancel', okLabel='OK'){
+    return new Promise(resolve=>{
+      const ov = document.getElementById('confirmOverlay');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMsg').textContent = '';
+      const ok = document.getElementById('confirmOk');
+      const cancel = document.getElementById('confirmCancel');
+      ok.textContent = okLabel; cancel.textContent = cancelLabel;
+      ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+      const cleanup = (val)=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); ok.onclick = cancel.onclick = null; resolve(val); };
+      ok.onclick = ()=> cleanup(true);
+      cancel.onclick = ()=> cleanup(false);
+    });
+  }
+  // tri confirm with custom labels; returns 'save' | 'nosave' | 'cancel'
+  function triConfirm(title, leftLabel='No', middleLabel='Cancel', rightLabel='Yes'){
+    return new Promise(resolve=>{
+      const ov = document.getElementById('confirmOverlay');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMsg').textContent = '';
+      const ok = document.getElementById('confirmOk');
+      const cancel = document.getElementById('confirmCancel');
+
+      // Build 3 buttons in place
+      const wrap = ok.parentNode;
+      wrap.innerHTML = '';
+      const left = document.createElement('button');
+      left.className='btn'; left.type='button'; left.textContent=leftLabel;
+      const mid = document.createElement('button');
+      mid.className='btn'; mid.type='button'; mid.textContent=middleLabel;
+      const right = document.createElement('button');
+      right.className='btn primary'; right.type='button'; right.textContent=rightLabel;
+      wrap.appendChild(left); wrap.appendChild(mid); wrap.appendChild(right);
+
+      ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+
+      const cleanup = ()=> {
+        ov.style.display='none'; ov.setAttribute('aria-hidden','true');
+        wrap.innerHTML=''; wrap.appendChild(cancel); wrap.appendChild(ok);
+      };
+
+      left.onclick  = ()=>{ cleanup(); resolve('nosave'); };  // left → No
+      mid.onclick   = ()=>{ cleanup(); resolve('cancel'); };
+      right.onclick = ()=>{ cleanup(); resolve('save'); };    // right → Yes
+    });
+  }
+
+  // -------- Load initial form.json --------
+  async function load(){
+    const res = await fetch('form.json?ts=' + Date.now(), { cache: 'no-store' });
+    schema = await res.json();
+    survey = Array.isArray(schema.survey) ? schema.survey.slice() : [];
+    document.getElementById('meta').textContent =
+      (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
+    render();
+  }
+
+  // -------- Boot --------
+  window.addEventListener('DOMContentLoaded', ()=>{
+    load();
+
+    // Top & bottom add buttons
+    document.getElementById('addBtnTop').addEventListener('click', openAddModal);
+    document.getElementById('addBtnBottom').addEventListener('click', openAddModal);
+
+    // Wire add/edit modal actions
+    wireAddEdit();
+
+    // Export (top & bottom)
+    document.getElementById('exportBtnTop').addEventListener('click', exportJson);
+    document.getElementById('exportBtnBottom').addEventListener('click', exportJson);
+
+    // Save to file (top & bottom)
+    const saveMerged = async ()=> {
+      const r = await saveToFilePicker(getMerged(), 'form.json');
+      setStatus(r==='saved' ? 'Saved to file' : r==='download' ? 'Downloaded' : 'Canceled', r!=='canceled');
+    };
+    document.getElementById('saveToFileBtnTop').addEventListener('click', saveMerged);
+    document.getElementById('saveToFileBtnBottom').addEventListener('click', saveMerged);
+
+    // Finished (top & bottom)
+    document.getElementById('finishedBtnTop').addEventListener('click', finishedFlow);
+    document.getElementById('finishedBtnBottom').addEventListener('click', finishedFlow);
+
+    // Import JSON / CSV
+    wireImportJson();
+    wireImportCsv();
+  });
+</script>
+</body>
+</html>
