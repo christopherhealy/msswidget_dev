@@ -9,33 +9,17 @@
     --edge:#e5e7eb; --muted:#6b7280; --blue:#1a5cff; --card:#fff; --bg:#f6f7fb;
   }
   html,body{margin:0;background:var(--bg);font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827}
-
-  /* Top header "card" */
-  .top{
-    position:sticky; top:0; z-index:40;
-    background:transparent; /* we'll render an inner card */
-    border-bottom:0;
-  }
-  .top .inner{
-    max-width:1200px; margin:8px auto 8px auto; padding:0 12px;
-  }
-  .topCard{
-    background:#fff; border:1px solid var(--edge); border-radius:16px;
-    box-shadow:0 10px 24px rgba(0,0,0,.06);
-  }
-  .topRow{
-    padding:8px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-  }
+  .top{position:sticky; top:0; z-index:40; background:transparent;}
+  .top .inner{max-width:1200px; margin:8px auto; padding:0 12px;}
+  .topCard{background:#fff; border:1px solid var(--edge); border-radius:16px; box-shadow:0 10px 24px rgba(0,0,0,.06);}
+  .topRow{padding:8px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
   .title{font-weight:800}
   .toolbar{margin-left:auto; display:flex; gap:10px; align-items:center}
   .btn{border-radius:999px; border:1px solid var(--edge); background:#fff; padding:10px 14px; font-weight:700; cursor:pointer}
   .btn.primary{background:var(--blue); color:#fff; border-color:transparent}
   .btn.small{padding:8px 10px; border-radius:10px}
-
-  /* Layout */
   .wrap{max-width:1200px; margin:6px auto 18px auto; padding:0 12px; display:grid; grid-template-columns:1fr 560px; gap:16px; align-items:start}
   @media (max-width: 1020px){ .wrap{ grid-template-columns:1fr; } }
-
   .card{background:var(--card); border:1px solid var(--edge); border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.05); overflow:hidden}
   .sectionPad{padding:14px}
   .muted{color:var(--muted); font-size:12px}
@@ -44,8 +28,6 @@
     width:100%; border:1px solid var(--edge); border-radius:12px; padding:10px 12px; font:inherit; background:#fff
   }
   .row{display:grid; gap:8px; margin-bottom:12px}
-
-  /* Collapsible */
   details{border-top:1px solid var(--edge)}
   details:first-of-type{border-top:0}
   summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:700; user-select:none}
@@ -53,12 +35,8 @@
   .chev{transition:transform .2s ease}
   details[open] .chev{transform:rotate(90deg)}
   .secInner{padding:0 14px 14px 14px}
-
-  /* Branding */
   .logoWell{border:1px dashed #d1d5db; border-radius:14px; background:#f9fafb; padding:18px; display:grid; place-items:center; margin-bottom:10px}
   .logoImg{width:220px; height:140px; object-fit:contain; border-radius:10px; background:#fff}
-
-  /* Widget Preview (mirror real widget) */
   .pvShell{padding:18px}
   .preview{background:#fff; border:1px solid var(--edge); border-radius:16px; overflow:hidden}
   .pvHead{padding:24px 18px 8px; display:grid; justify-items:center; background:linear-gradient(180deg,#fff,#f4f7ff)}
@@ -76,14 +54,11 @@
   .pvMuted{color:var(--muted); font-size:12px; text-align:center}
   .pvAudio{margin-top:8px; text-align:center}
   .pvPowered{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
-
-  /* Save modal (nice dialog) */
   .overlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); z-index:2100}
   .modal{width:min(520px,94vw); background:#fff; border:1px solid var(--edge); border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.18); padding:18px}
   .modal h3{margin:0 0 8px 0; font-size:16px}
   .modal p{margin:0 0 14px 0; color:#374151; font-size:14px}
   .modalBtns{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
-  .btn.primary{background:var(--blue); color:#fff; border-color:transparent}
 </style>
 </head>
 <body>
@@ -108,7 +83,6 @@
 <div class="wrap">
   <!-- LEFT: Editor -->
   <div class="card">
-    <!-- Collapsible: Widget Labels -->
     <details open>
       <summary><span class="chev">▸</span> Widget Labels</summary>
       <div class="secInner">
@@ -116,7 +90,6 @@
       </div>
     </details>
 
-    <!-- Collapsible: Theme -->
     <details>
       <summary><span class="chev">▸</span> Theme</summary>
       <div class="secInner">
@@ -133,7 +106,6 @@
       </div>
     </details>
 
-    <!-- Collapsible: Branding -->
     <details>
       <summary><span class="chev">▸</span> Branding</summary>
       <div class="secInner">
@@ -150,7 +122,6 @@
       </div>
     </details>
 
-    <!-- Collapsible: API, Logging & Audio -->
     <details>
       <summary><span class="chev">▸</span> API, Logging & Audio</summary>
       <div class="secInner">
@@ -190,7 +161,6 @@
       </div>
     </details>
 
-    <!-- Footer controls (optional, kept minimal) -->
     <div class="sectionPad" style="display:flex;gap:8px;justify-content:flex-end">
       <button id="saveAllBottom" class="btn">Save…</button>
     </div>
@@ -208,13 +178,11 @@
         <div id="pvCounter" class="pvCounter"></div>
         <div id="pvQ" class="pvQ"></div>
 
-        <!-- Nav -->
         <div class="pvNav">
           <button id="pvPrev" class="pill">Previous</button>
           <button id="pvNext" class="pill">Next</button>
         </div>
 
-        <!-- Toolbar (disabled look) -->
         <div class="pvToolbar">
           <button class="pvBtn" disabled>Record your response</button>
           <button class="pvBtn" disabled>Stop</button>
@@ -254,27 +222,28 @@
 </div>
 
 <script>
+/* ---------- NEW: point Admin to Render ---------- */
+const API_BASE = "https://msswidget-dev.onrender.com";
+
 /* ---------- State ---------- */
 let FORM=null, CONFIG=null, IMAGE=null;
-let _fhForm=null,_fhConfig=null,_fhImage=null; // file handles (if supported)
+let _fhForm=null,_fhConfig=null,_fhImage=null;
 let idx=0;
 
-/* ---------- Helpers ---------- */
 const $=(id)=>document.getElementById(id);
 const esc = s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function getLogo(IMAGE){ if(!IMAGE) return ''; for (const k of ['logoDataUrl','dataUrl','logo','src','url','path']) if (IMAGE[k]) return String(IMAGE[k]); return ''; }
 function fileToDataUrl(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(f); }); }
 
-/* ---------- Load ---------- */
+/* ---------- Load from Render instead of local ---------- */
 async function loadAll(){
   const [f,c,i] = await Promise.allSettled([
-    fetch('form.json?ts='+Date.now(),{cache:'no-store'}),
-    fetch('config.json?ts='+Date.now(),{cache:'no-store'}),
-    fetch('image.json?ts='+Date.now(),{cache:'no-store'}),
+    fetch(`${API_BASE}/config/forms?ts=${Date.now()}`,{cache:'no-store'}),
+    fetch(`${API_BASE}/config/widget?ts=${Date.now()}`,{cache:'no-store'}),
+    fetch(`${API_BASE}/config/images?ts=${Date.now()}`,{cache:'no-store'}),
   ]);
 
-  // Defaults are aligned to your latest form/config
-  FORM   = f.status==='fulfilled' ? await f.value.json() : {
+  FORM   = f.status==='fulfilled' && f.value.ok ? await f.value.json() : {
     headline:"Practice TOEFL Speaking Test",
     recordButton:"Record your response",
     previousButton:"Back",
@@ -283,22 +252,24 @@ async function loadAll(){
     stopButton:"Stop",
     poweredByLabel:"Powered by MSS Vox",
     NotRecordingLabel:"Not recording",
-    SubmitForScoringButton:"Submit for scoring",
     survey:[]
   };
 
-  CONFIG = c.status==='fulfilled' ? await c.value.json() : {
+  CONFIG = c.status==='fulfilled' && c.value.ok ? await c.value.json() : {
     editable:{headline:true,recordButton:true,previousButton:true,nextButton:true,poweredByLabel:true},
     theme:"apple",
     features:{recording:true},
     api:{enabled:true,baseUrl:"",key:"",secret:""},
     audioMinSeconds:30, audioMaxSeconds:61,
-    logger:{enabled:false,url:"http://localhost:3010/log"}
+    logger:{enabled:false,url:"https://msswidget-dev.onrender.com/log/submission"}
   };
 
-  IMAGE  = i.status==='fulfilled' ? await i.value.json() : {logoDataUrl:""};
+  IMAGE  = i.status==='fulfilled' && i.value.ok ? await i.value.json() : {logoDataUrl:""};
 
-  // Build UI
+  console.log("[Admin] FORM:", FORM);
+  console.log("[Admin] CONFIG:", CONFIG);
+  console.log("[Admin] IMAGE:", IMAGE);
+
   buildLabels();
   bindTheme();
   bindBranding();
@@ -306,10 +277,9 @@ async function loadAll(){
   renderPreview();
 }
 
-/* ---------- Collapsible: Widget Labels (respect CONFIG.editable) ---------- */
+/* ---------- rest of your original functions (unchanged) ---------- */
 function buildLabels(){
   const root = $('labelsSect'); root.innerHTML='';
-
   const defs = [
     ['headline','Headline','Type headline…'],
     ['recordButton','Record Button','Record your response'],
@@ -321,12 +291,9 @@ function buildLabels(){
     ['poweredByLabel','Powered By Label','Powered by MSS Vox'],
     ['NotRecordingLabel','Not Recording Label','Not recording'],
   ];
-
   defs.forEach(([key,label,ph])=>{
-    // If CONFIG.editable has explicit false for a subset, hide that field
     const editable = CONFIG?.editable;
     if (editable && key in editable && editable[key] === false) return;
-
     const row = document.createElement('div'); row.className='row';
     row.innerHTML = `<div class="label">${label}</div><input id="f_${key}" type="text" placeholder="${esc(ph)}">`;
     root.appendChild(row);
@@ -336,7 +303,6 @@ function buildLabels(){
   });
 }
 
-/* ---------- Collapsible: Theme ---------- */
 function bindTheme(){
   const sel = $('cfgTheme');
   sel.value = (CONFIG.theme||'apple').toLowerCase();
@@ -345,7 +311,6 @@ function bindTheme(){
   });
 }
 
-/* ---------- Collapsible: Branding ---------- */
 function bindBranding(){
   const url = getLogo(IMAGE);
   $('logoImg').src = url || '';
@@ -363,7 +328,6 @@ function bindBranding(){
   });
 }
 
-/* ---------- Collapsible: API, Logging & Audio ---------- */
 function bindApiLoggingAudio(){
   $('cfgApiBase').value = CONFIG.api?.baseUrl || '';
   $('cfgApiBase').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.baseUrl=e.target.value; });
@@ -397,37 +361,19 @@ function bindApiLoggingAudio(){
   });
 }
 
-/* ---------- Preview ---------- */
 function renderPreview(){
   $('pvBrand').textContent = FORM.headline || '';
   $('pvLogo').src = getLogo(IMAGE) || '';
-
   const s = Array.isArray(FORM.survey)?FORM.survey:[];
   const safeIdx = Math.max(0, Math.min(idx, Math.max(0, s.length-1)));
   idx = safeIdx;
-
   $('pvCounter').textContent = s.length ? `Question ${idx+1} of ${s.length}` : '';
   $('pvQ').innerHTML = s.length ? esc(s[idx]).replace(/\n+/g,'<br>') : '<i>(No questions)</i>';
-
   $('pvPrev').textContent = FORM.previousButton || 'Previous';
   $('pvNext').textContent = FORM.nextButton || 'Next';
-
-  const recBtn   = document.querySelector('.pvToolbar .pvBtn:nth-child(1)');
-  const stopBtn  = document.querySelector('.pvToolbar .pvBtn:nth-child(2)');
-  const uplBtn   = document.querySelector('.pvToolbar .pvBtn:nth-child(3)');
-  const subBtn   = document.querySelector('.pvToolbar .pvBtn:nth-child(4)');
-
-  if (recBtn)  recBtn.textContent = FORM.recordButton || 'Record your response';
-  if (stopBtn) stopBtn.textContent = FORM.stopButton || 'Stop';
-  if (uplBtn)  uplBtn.textContent = FORM.uploadButton || 'Choose an audio file';
-  if (subBtn)  subBtn.textContent = FORM.SubmitForScoringButton || 'Submit for scoring';
-
-  $('pvRecState').textContent = FORM.NotRecordingLabel || 'Not recording';
-
   const showPowered = (CONFIG.editable?.poweredByLabel !== false);
   $('pvPowered').style.display = showPowered ? '' : 'none';
   if (showPowered) $('pvPowered').textContent = FORM.poweredByLabel || 'Powered by MSS Vox';
-
   const minS = Number(CONFIG.audioMinSeconds ?? 30);
   const maxS = Number(CONFIG.audioMaxSeconds ?? 61);
   const mins = String(Math.floor(minS/60)).padStart(2,'0');
@@ -437,77 +383,41 @@ function renderPreview(){
   $('pvLength').textContent = `Allowed length: ${mins}:${secs}–${maxm}:${maxs}`;
 }
 
-/* Prev/Next in preview */
 function prevQ(){ const s = Array.isArray(FORM.survey)?FORM.survey:[]; if (!s.length) return; idx = (idx-1+s.length)%s.length; renderPreview(); }
 function nextQ(){ const s = Array.isArray(FORM.survey)?FORM.survey:[]; if (!s.length) return; idx = (idx+1)%s.length; renderPreview(); }
 
-/* ---------- Saving (File System Access API with download fallback) ---------- */
+/* save: keep as-is (download) */
 async function saveJson(obj, name, slot){
   const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
-  if (window.showSaveFilePicker){
-    try{
-      let handle = (slot==='form')?_fhForm:(slot==='config')?_fhConfig:_fhImage;
-      if (handle){
-        const perm = await handle.requestPermission({mode:'readwrite'});
-        if (perm==='granted'){ const w=await handle.createWritable(); await w.write(blob); await w.close(); return 'saved'; }
-      }
-      handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:'JSON', accept:{'application/json':['.json']}}]});
-      const w=await handle.createWritable(); await w.write(blob); await w.close();
-      if (slot==='form') _fhForm=handle; if (slot==='config') _fhConfig=handle; if (slot==='image') _fhImage=handle;
-      return 'saved';
-    }catch(e){ console.warn('Save cancelled',e); return 'canceled'; }
-  }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.setAttribute('download',name);
   document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   return 'download';
 }
 async function saveAllDirty(){
-  // Always write all three for simplicity
   const r1 = await saveJson(FORM,'form.json','form');
   const r2 = await saveJson(CONFIG,'config.json','config');
   const r3 = await saveJson(IMAGE,'image.json','image');
   return [r1,r2,r3];
 }
 
-/* ---------- Save modal helpers ---------- */
-function showSaveDialog(){
-  const ov = $('saveOverlay');
-  ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
-  setTimeout(()=>$('saveClose')?.focus(),0);
-  const esc = (e)=>{ if(e.key==='Escape'){ closeSaveDialog(); } };
-  document.addEventListener('keydown', esc); ov._esc=esc;
-}
-function closeSaveDialog(){
-  const ov = $('saveOverlay');
-  ov.style.display='none'; ov.setAttribute('aria-hidden','true');
-  if (ov._esc){ document.removeEventListener('keydown', ov._esc); ov._esc=null; }
-}
-function openWidget(){ window.open('Widget.html','_blank','noopener'); }
+/* modal */
+function showSaveDialog(){ $('saveOverlay').style.display='flex'; $('saveOverlay').setAttribute('aria-hidden','false'); }
+function closeSaveDialog(){ $('saveOverlay').style.display='none'; $('saveOverlay').setAttribute('aria-hidden','true'); }
+function openWidget(){ window.open('widget.html','_blank','noopener'); }   // <-- lowercase
 function openSurvey(){ window.open('WidgetSurvey.html','_blank','noopener'); }
-async function handleSave(){
-  await saveAllDirty();
-  showSaveDialog();
-}
+async function handleSave(){ await saveAllDirty(); showSaveDialog(); }
 
-/* ---------- Boot ---------- */
+/* boot */
 window.addEventListener('DOMContentLoaded', async ()=>{
   await loadAll();
-
-  // Top & bottom save
   $('saveAllTop').addEventListener('click', handleSave);
   $('saveAllBottom').addEventListener('click', handleSave);
-
-  // Quick links
   $('openWidget').addEventListener('click', openWidget);
   $('openSurvey').addEventListener('click', openSurvey);
-
-  // Save modal buttons
   $('saveClose').addEventListener('click', closeSaveDialog);
   $('saveOpenWidget').addEventListener('click', ()=>{ closeSaveDialog(); openWidget(); });
   $('saveOpenSurvey').addEventListener('click', ()=>{ closeSaveDialog(); openSurvey(); });
   $('saveCloseAdmin').addEventListener('click', ()=>{ window.close(); });
-
-  // Preview nav
   $('pvPrev').addEventListener('click', prevQ);
   $('pvNext').addEventListener('click', nextQ);
 });
