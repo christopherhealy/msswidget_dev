@@ -1,0 +1,17 @@
+{
+  "headline": "CEFR Assessment ",
+  "recordButton": "Record your response",
+  "previousButton": "Previous",
+  "nextButton": "Next",
+  "uploadButton": "Choose an audio file",
+  "stopButton": "Stop",
+  "poweredByLabel": "Powered by MSS Vox",
+  "NotRecordingLabel": "Not recording",
+  "SubmitForScoringButton": "Submit for scoring",
+  "survey": [
+    "Do you agree or disagree with this statement? \n\nPlease explain your answer using specific reasons and examples.",
+    "Describe a place you would like to visit? \n\nExplain why.",
+    "Do you think it’s better to study alone or with others? \n\nGive reasons for your answer.",
+    "What is your favourite kind of music? \n\nTell me why you like it and how you tend to enjoy it."
+  ]
+}
