@@ -1,16 +1,20 @@
-// server.js — msswidget-dev
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-const { URL } = require("url");
+// server.js  (ESM version for Render)
+
+import http from "http";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 10000;
 
-// our JSONs live in /src
+// folders
 const SRC_DIR = path.join(__dirname, "src");
 const LOG_DIR = path.join(__dirname, "logger");
 
-// ensure logger dir
+// make sure logger dir exists
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
@@ -22,7 +26,7 @@ function readJson(basename, fallback) {
     const raw = fs.readFileSync(file, "utf8");
     return JSON.parse(raw);
   } catch (e) {
-    console.warn("JSON parse failed for", basename, e);
+    console.warn("[msswidget] JSON parse failed for", basename, e);
     return fallback;
   }
 }
@@ -63,9 +67,9 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // normalize URL (strip query)
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
+  // normalize path (strip query)
+  const fullUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = fullUrl.pathname;
 
   // GET /config/widget
   if (req.method === "GET" && pathname === "/config/widget") {
@@ -105,7 +109,6 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try {
         const parsed = JSON.parse(body || "{}");
-        // add ip & timestamp if missing
         parsed.timestamp = parsed.timestamp || new Date().toISOString();
         parsed.ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
         writeCsvRow(parsed);
