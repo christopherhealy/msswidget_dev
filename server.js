@@ -45,18 +45,19 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  /* -------- 1. CONFIG endpoints --------
-     /config/widget  → src/config.json
-     /config/forms   → src/form.json
-     /config/images  → src/image.json
-  ---------------------------------------------------- */
+  // 1) CONFIG endpoints
+  // /config/widget  -> src/config.json
+  // /config/forms   -> src/form.json
+  // /config/images  -> src/image.json
   if (req.method === "GET" && req.url.startsWith("/config/")) {
     const key = req.url.replace("/config/", "").trim();
+
     const map = {
       widget: "config.json",
       forms: "form.json",
-      images: "image.json"
+      images: "image.json",
     };
+
     const fileName = map[key];
     const data = fileName ? readJson(fileName) : null;
 
@@ -69,10 +70,8 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify(data));
   }
 
-  /* -------- 2. LOG endpoints --------
-     POST /log/qa, /log/report, /log/submission, etc.
-     body: { ...payload... }
-  ---------------------------------------------------- */
+  // 2) LOG endpoints
+  // POST /log/qa, /log/report, /log/submission
   if (req.method === "POST" && req.url.startsWith("/log/")) {
     const logName = req.url.replace("/log/", "").trim();
     let body = "";
@@ -91,7 +90,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  /* -------- 3. Default 404 -------- */
+  // 3) Default 404
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "not found" }));
 });
