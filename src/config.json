@@ -18,9 +18,9 @@
     "secret": "1e9f78e2-ec19-4727-8434-fd7df9a8bd5a"
   },
   "logger": {
-    "enabled": true,
-    "url": "http://localhost:3010/log"
-  },
+  "enabled": true,
+  "url": "https://msswidget-dev.onrender.com/log/submission"
+}
   "audioMinSeconds": 20,
   "audioMaxSeconds": 90
 }
