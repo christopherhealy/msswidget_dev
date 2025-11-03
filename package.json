@@ -1,9 +1,6 @@
 {
-  "name": "msswidget-dev",
-  "version": "1.0.0",
+  "name": "mss-widget-service",
   "type": "module",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {}
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "cors": "^2.8.5", "express": "^4.19.2" }
 }
