@@ -1,90 +1,155 @@
-// server.js — MSS Widget Dev Server
-// Compatible with Render free tier (no persistent disk required)
-
 import express from "express";
-import fs from "fs";
-import path from "path";
 import cors from "cors";
+import fs from "fs";
+import fsp from "fs/promises";
+import path from "path";
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.static("public"));
+app.use(express.json());
+app.use(express.static(".")); // serve public folder if present
 
-/* ---------- PATH SETUP ---------- */
-const __dirname = path.resolve();
-const CONFIG_DIR = path.join(__dirname, "src");
-const LOG_PATH =
-  process.env.NODE_ENV === "production"
-    ? "/tmp/logger.csv" // ephemeral on free tier
-    : "./logger.csv";   // local dev
+// ---------- BASIC TESTFORM ROUTES ----------
+const filePath = path.join(process.cwd(), "testform.json");
 
-/* ---------- HELPER FUNCTIONS ---------- */
-function jsonFile(file) {
-  return path.join(CONFIG_DIR, file);
-}
-function safeReadJSON(file, fallback = {}) {
+app.get("/testform.json", (req, res) => {
   try {
-    return JSON.parse(fs.readFileSync(jsonFile(file), "utf8"));
+    const data = fs.existsSync(filePath)
+      ? JSON.parse(fs.readFileSync(filePath, "utf8"))
+      : { message: "hello vercel" };
+    res.json(data);
   } catch {
-    return fallback;
+    res.status(500).json({ message: "error reading file" });
   }
-}
-function safeWriteJSON(file, obj) {
-  fs.writeFileSync(jsonFile(file), JSON.stringify(obj, null, 2));
-}
-
-/* ---------- CONFIG ROUTES ---------- */
-app.get("/config/forms", (req, res) =>
-  res.json(safeReadJSON("form.json", { headline: "Practice Test", survey: [] }))
-);
-app.put("/config/forms", (req, res) => {
-  safeWriteJSON("form.json", req.body || {});
-  res.json({ status: "ok", file: "form.json" });
 });
 
-app.get("/config/widget", (req, res) =>
-  res.json(
-    safeReadJSON("config.json", {
-      theme: "apple",
-      api: { baseUrl: "", key: "", secret: "" },
-      logger: { enabled: true, url: "" },
-      audioMinSeconds: 30,
-      audioMaxSeconds: 60,
-    })
-  )
-);
-app.put("/config/widget", (req, res) => {
-  safeWriteJSON("config.json", req.body || {});
-  res.json({ status: "ok", file: "config.json" });
+app.post("/testform.json", (req, res) => {
+  const msg = req.body.message || "no message";
+  fs.writeFileSync(filePath, JSON.stringify({ message: msg }, null, 2));
+  res.json({ message: msg });
 });
 
-app.get("/config/images", (req, res) =>
-  res.json(safeReadJSON("image.json", { logoDataUrl: "" }))
-);
-app.put("/config/images", (req, res) => {
-  safeWriteJSON("image.json", req.body || {});
-  res.json({ status: "ok", file: "image.json" });
-});
+// ---------- LOGGER + REPORT FEATURE ----------
+const CSV_PATH = "/tmp/logger.csv";
+const NOTES_PATH = "/tmp/notes.json";
 
-/* ---------- LOGGING ROUTE ---------- */
-app.post("/log/submission", (req, res) => {
-  const logLine = `${new Date().toISOString()},${JSON.stringify(req.body)}\n`;
+// Ensure CSV header
+async function ensureCsvHeader() {
   try {
-    fs.appendFileSync(LOG_PATH, logLine);
-    console.log("Logged submission:", req.body);
-    res.json({ status: "logged", file: LOG_PATH });
-  } catch (err) {
-    console.error("Log write error:", err);
-    res.status(500).json({ status: "error", message: "Failed to log" });
+    await fsp.access(CSV_PATH, fs.constants.F_OK);
+  } catch {
+    await fsp.writeFile(
+      CSV_PATH,
+      "timestamp,toefl,ielts,cefr,fileName,lengthSec,question,extra\n",
+      "utf8"
+    );
+  }
+}
+
+async function readNotes() {
+  try {
+    const txt = await fsp.readFile(NOTES_PATH, "utf8");
+    return JSON.parse(txt);
+  } catch {
+    return {};
+  }
+}
+
+async function writeNotes(obj) {
+  await fsp.writeFile(NOTES_PATH, JSON.stringify(obj, null, 2), "utf8");
+}
+
+function parseCsvToObjects(csv) {
+  const lines = csv.trim().split("\n");
+  if (lines.length <= 1) return [];
+  const header = lines[0].split(",").map((s) => s.trim());
+  return lines.slice(1).map((line) => {
+    const cells = line.split(",");
+    const obj = {};
+    header.forEach((h, i) => (obj[h] = (cells[i] ?? "").trim()));
+    obj.id = `${obj.timestamp}|${obj.fileName}`;
+    return obj;
+  });
+}
+
+// POST /log/submission → write CSV row
+app.post("/log/submission", async (req, res) => {
+  try {
+    await ensureCsvHeader();
+    const {
+      timestamp = new Date().toISOString(),
+      toefl = "",
+      ielts = "",
+      cefr = "",
+      fileName = "",
+      lengthSec = "",
+      question = "",
+      extra = "",
+    } = req.body || {};
+
+    const line = `${timestamp},${toefl},${ielts},${cefr},"${fileName}",${lengthSec},"${question.replace(/"/g, "'")}","${extra.replace(/"/g, "'")}"\n`;
+    await fsp.appendFile(CSV_PATH, line, "utf8");
+
+    res.json({ ok: true, file: CSV_PATH });
+  } catch (e) {
+    console.error("❌ Logger error:", e);
+    res.status(500).json({ ok: false, error: String(e) });
   }
 });
 
-/* ---------- HEALTH CHECK ---------- */
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+// GET /log/download → raw CSV
+app.get("/log/download", async (req, res) => {
+  try {
+    await ensureCsvHeader();
+    res.download(CSV_PATH, "logger.csv");
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
 
-/* ---------- START SERVER ---------- */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`✅ MSS Widget Dev Server running on port ${PORT}`)
+// GET /log/list?limit=200 → parsed rows + notes
+app.get("/log/list", async (req, res) => {
+  const limit = Math.max(1, Math.min(2000, Number(req.query.limit || 200)));
+  try {
+    await ensureCsvHeader();
+    const csv = await fsp.readFile(CSV_PATH, "utf8");
+    const lines = csv.trimEnd().split("\n");
+    const head = lines[0];
+    const body = lines.slice(1);
+    const tail = body.slice(Math.max(0, body.length - limit));
+    const parsed = parseCsvToObjects([head, ...tail].join("\n"));
+
+    const notes = await readNotes();
+    const merged = parsed.map((r) => ({
+      ...r,
+      note: notes[r.id]?.note || "",
+      teacher: notes[r.id]?.teacher || "",
+    }));
+    res.json({ ok: true, rows: merged });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
+
+// POST /log/note { id, note, teacher }
+app.post("/log/note", async (req, res) => {
+  try {
+    const { id, note = "", teacher = "" } = req.body || {};
+    if (!id) return res.status(400).json({ ok: false, error: "id required" });
+    const notes = await readNotes();
+    notes[id] = { note, teacher, updatedAt: new Date().toISOString() };
+    await writeNotes(notes);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
+
+// Health check (for Render)
+app.get("/healthz", (req, res) => res.send("ok"));
+
+// ---------- START SERVER ----------
+const port = process.env.PORT || 3000;
+app.listen(port, () =>
+  console.log(`✅ Service running on port ${port} (${new Date().toLocaleTimeString()})`)
 );
