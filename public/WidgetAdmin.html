@@ -49,14 +49,16 @@
   .pvBtn{border-radius:999px; border:1px solid var(--edge); background:#fff; padding:10px 14px; font-weight:700; opacity:.55; cursor:not-allowed}
   .pvRecbar{display:flex; gap:8px; align-items:center; justify-content:center; margin-top:8px}
   .pvDot{width:8px; height:8px; border-radius:999px; background:#ef4444; opacity:.35}
-  .pvMuted{color:#6b7280; font-size:12px; text-align:center}
+  .pvMuted{color:var(--muted); font-size:12px; text-align:center}
   .pvAudio{margin-top:8px; text-align:center}
-  .pvPowered{margin-top:12px; text-align:center; color:#6b7280; font-size:12px}
+  .pvPowered{margin-top:12px; text-align:center; color:#muted; font-size:12px}
   .overlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); z-index:2100}
   .modal{width:min(520px,94vw); background:#fff; border:1px solid var(--edge); border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.18); padding:18px}
   .modal h3{margin:0 0 8px 0; font-size:16px}
   .modal p{margin:0 0 14px 0; color:#374151; font-size:14px}
   .modalBtns{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+  #toast{position:fixed; right:14px; bottom:14px; background:#111827; color:#fff; font-size:13px; padding:10px 12px; border-radius:12px; opacity:0; transform:translateY(10px); transition:all .2s; z-index:2200}
+  #toast.show{opacity:1; transform:translateY(0)}
 </style>
 </head>
 <body>
@@ -67,9 +69,9 @@
       <div class="topRow">
         <div class="title">Widget Admin</div>
         <div class="toolbar">
-          <button id="saveAllTop" class="btn">Save…</button>
-          <button id="openWidget" class="btn">Open Widget</button>
-          <button id="openSurvey" class="btn">Open Widget Survey</button>
+          <button id="saveAllTop" type="button" class="btn">Save…</button>
+          <button id="openWidget" type="button" class="btn">Open Widget</button>
+          <button id="openSurvey" type="button" class="btn">Open Widget Survey</button>
         </div>
       </div>
     </div>
@@ -89,7 +91,10 @@
         <div class="sectionPad">
           <div class="row">
             <div class="label">Theme</div>
-            <select id="cfgTheme"><option value="apple">Apple</option><option value="default">Default</option></select>
+            <select id="cfgTheme">
+              <option value="apple">Apple</option>
+              <option value="default">Default</option>
+            </select>
             <div class="muted">“Apple” is our default style.</div>
           </div>
         </div>
@@ -102,8 +107,10 @@
         <div class="sectionPad">
           <div class="logoWell"><img id="logoImg" class="logoImg" alt="Brand logo"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <label class="btn small"><input id="fileLogo" type="file" accept="image/*" style="display:none"> Upload logo…</label>
-            <button id="clearLogo" class="btn small">Clear</button>
+            <label class="btn small" style="display:inline-flex;align-items:center;gap:8px;">
+              <input id="fileLogo" type="file" accept="image/*" style="display:none"> Upload logo…
+            </label>
+            <button id="clearLogo" type="button" class="btn small">Clear</button>
             <span class="muted">Stored in <code>image.json</code>.</span>
           </div>
         </div>
@@ -114,26 +121,48 @@
       <summary><span class="chev">▸</span> API, Logging & Audio</summary>
       <div class="secInner">
         <div class="sectionPad">
-          <div class="row"><div class="label">API Base URL</div><input id="cfgApiBase" type="url" placeholder="https://app.myspeakingscore.com"></div>
-          <div class="row"><div class="label">API Key</div><input id="cfgApiKey" type="text" placeholder="Paste your MSS API key"></div>
-          <div class="row"><div class="label">API Secret</div><input id="cfgApiSecret" type="password" placeholder="Paste your X-API-SECRET"></div>
-          <div class="row"><label style="display:flex;align-items:center;gap:8px"><input id="cfgLogEnabled" type="checkbox"> Enable Logging</label></div>
-          <div class="row"><div class="label">Logger URL</div><input id="cfgLogUrl" type="url" placeholder="https://msswidget-dev.onrender.com/log/submission"></div>
-          <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div><div class="label">Audio Min Seconds</div><input id="cfgMinS" type="number" min="1" step="1" placeholder="30"></div>
-            <div><div class="label">Audio Max Seconds</div><input id="cfgMaxS" type="number" min="1" step="1" placeholder="61"></div>
+          <div class="row">
+            <div class="label">API Base URL</div>
+            <input id="cfgApiBase" type="url" placeholder="https://app.myspeakingscore.com">
+          </div>
+          <div class="row">
+            <div class="label">API Key</div>
+            <input id="cfgApiKey" type="text" placeholder="Paste your MSS API key">
+          </div>
+          <div class="row">
+            <div class="label">API Secret</div>
+            <input id="cfgApiSecret" type="password" placeholder="Paste your X-API-SECRET">
+          </div>
+          <div class="row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <input id="cfgLogEnabled" type="checkbox"> Enable Logging
+            </label>
+          </div>
+          <div class="row">
+            <div class="label">Logger URL</div>
+            <input id="cfgLogUrl" type="url" placeholder="https://msswidget-dev.onrender.com/log/submission">
+          </div>
+          <div class="row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <div class="label">Audio Min Seconds</div>
+              <input id="cfgMinS" type="number" min="1" step="1" placeholder="30">
+            </div>
+            <div>
+              <div class="label">Audio Max Seconds</div>
+              <input id="cfgMaxS" type="number" min="1" step="1" placeholder="61">
+            </div>
           </div>
         </div>
       </div>
     </details>
 
     <div class="sectionPad" style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="saveAllBottom" class="btn">Save…</button>
+      <button id="saveAllBottom" type="button" class="btn">Save…</button>
     </div>
   </div>
 
   <div class="card pvShell">
-    <h3 style="margin:0 0 8px 0;font-size:14px;padding:0 4px">Widget Preview</h3>
+    <h3 style="margin:0 0 8px 0; font-size:14px; padding:0 4px">Widget Preview</h3>
     <div class="preview">
       <div class="pvHead">
         <img id="pvLogo" class="pvLogo" alt="Logo preview">
@@ -142,9 +171,20 @@
       <div class="pvBody">
         <div id="pvCounter" class="pvCounter"></div>
         <div id="pvQ" class="pvQ"></div>
-        <div class="pvNav"><button id="pvPrev" class="pill">Previous</button><button id="pvNext" class="pill">Next</button></div>
-        <div class="pvToolbar"><button class="pvBtn" disabled>Record your response</button><button class="pvBtn" disabled>Stop</button><button class="pvBtn" disabled>Choose an audio file</button><button class="pvBtn" disabled>Submit for scoring</button></div>
-        <div class="pvRecbar"><span class="pvDot"></span><span id="pvRecState" class="pvMuted">Not recording</span></div>
+        <div class="pvNav">
+          <button id="pvPrev" type="button" class="pill">Previous</button>
+          <button id="pvNext" type="button" class="pill">Next</button>
+        </div>
+        <div class="pvToolbar">
+          <button type="button" class="pvBtn" disabled>Record your response</button>
+          <button type="button" class="pvBtn" disabled>Stop</button>
+          <button type="button" class="pvBtn" disabled>Choose an audio file</button>
+          <button type="button" class="pvBtn" disabled>Submit for scoring</button>
+        </div>
+        <div class="pvRecbar">
+          <span class="pvDot"></span>
+          <span id="pvRecState" class="pvMuted">Not recording</span>
+        </div>
         <div class="pvAudio"><div id="pvLength" class="pvMuted"></div></div>
         <div id="pvPowered" class="pvPowered">Powered by MSS Vox</div>
       </div>
@@ -159,251 +199,266 @@
     <h3 id="saveTitle">Files Updated ✅</h3>
     <p>Your widget configuration has been saved successfully.</p>
     <div class="modalBtns">
-      <button id="saveClose" class="btn primary">Continue Editing</button>
-      <button id="saveOpenWidget" class="btn">Open Widget</button>
-      <button id="saveOpenSurvey" class="btn">Open Widget Survey</button>
-      <button id="saveCloseAdmin" class="btn">Close Admin</button>
+      <button id="saveClose" type="button" class="btn primary">Continue Editing</button>
+      <button id="saveOpenWidget" type="button" class="btn">Open Widget</button>
+      <button id="saveOpenSurvey" type="button" class="btn">Open Widget Survey</button>
+      <button id="saveCloseAdmin" type="button" class="btn">Close Admin</button>
     </div>
   </div>
 </div>
 
+<div id="toast" role="status" aria-live="polite"></div>
+
 <script>
-/* ========= service base & mode ========= */
-const SERVICE_BASE = "https://msswidget-dev.onrender.com";
-const SAVE_MODE = "remote"; // 'remote' | 'local' (debug)
+/* ========= constants ========= */
+const SERVICE_BASE = 'https://msswidget-dev.onrender.com'; // Render service
+const SAVE_MODE = 'remote'; // 'remote' | 'local'
+const ADMIN_WRITE_KEY = ''; // optional: set if your server requires X-ADMIN-KEY
 
 /* ========= state ========= */
-let FORM=null, CONFIG=null, IMAGE=null, idx=0;
-let _fhForm=null,_fhConfig=null,_fhImage=null; // only used if SAVE_MODE='local'
+let FORM=null, CONFIG=null, IMAGE=null;
+let idx=0;
+let _fhForm=null,_fhConfig=null,_fhImage=null; // local fallback handles
 
 /* ========= utils ========= */
 const $=(id)=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function getLogo(o){ if(!o) return ""; for (const k of ["logoDataUrl","dataUrl","logo","src","url","path"]) if (o[k]) return String(o[k]); return ""; }
+function getLogo(o){ if(!o) return ''; for (const k of ['logoDataUrl','dataUrl','logo','src','url','path']) if (o[k]) return String(o[k]); return ''; }
 function fileToDataUrl(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(f); }); }
-function adminHeader(){ const key = CONFIG?.admin?.writeKey || ""; return key ? { "X-ADMIN-KEY": key } : {}; }
+function toast(msg, ok=true){ const t=$('toast'); t.textContent=msg; t.style.background=ok?'#111827':'#7c2d12'; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800); }
 
-/* ========= load all (Render first, local fallback) ========= */
+/* ========= load (Render-first, local fallback) ========= */
 async function loadAll(){
   const [f,c,i] = await Promise.allSettled([
-    fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`, {cache:"no-store"}),
-    fetch(`${SERVICE_BASE}/config/widget?ts=${Date.now()}`, {cache:"no-store"}),
-    fetch(`${SERVICE_BASE}/config/images?ts=${Date.now()}`, {cache:"no-store"}),
+    fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`, {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/widget?ts=${Date.now()}`, {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/images?ts=${Date.now()}`, {cache:'no-store'}),
   ]);
 
-  try {
-    FORM = f.status==="fulfilled" && f.value.ok
-      ? await f.value.json()
-      : await (await fetch("form.json?ts="+Date.now(), {cache:"no-store"})).json();
-  } catch { FORM = { headline:"Practice TOEFL Speaking Test", survey:[] }; }
+  try { FORM = f.status==='fulfilled' && f.value.ok ? await f.value.json()
+       : await (await fetch('form.json?ts='+Date.now(),{cache:'no-store'})).json();
+  } catch { FORM = { headline:'Practice TOEFL Speaking Test', survey:[] }; }
 
-  try {
-    CONFIG = c.status==="fulfilled" && c.value.ok
-      ? await c.value.json()
-      : await (await fetch("config.json?ts="+Date.now(), {cache:"no-store"})).json();
+  try { CONFIG = c.status==='fulfilled' && c.value.ok ? await c.value.json()
+       : await (await fetch('config.json?ts='+Date.now(),{cache:'no-store'})).json();
   } catch {
-    CONFIG = { editable:{}, theme:"apple", api:{enabled:true,baseUrl:"",key:"",secret:""}, logger:{enabled:false,url:""}, audioMinSeconds:30, audioMaxSeconds:61 };
+    CONFIG = {
+      editable:{ headline:true, recordButton:true, previousButton:true, nextButton:true, poweredByLabel:true, uploadButton:true, stopButton:true, NotRecordingLabel:true, SubmitForScoringButton:true },
+      theme:'apple', api:{ enabled:true, baseUrl:'', key:'', secret:'' },
+      logger:{ enabled:false, url:'' }, audioMinSeconds:30, audioMaxSeconds:61
+    };
   }
 
-  try {
-    IMAGE = i.status==="fulfilled" && i.value.ok
-      ? await i.value.json()
-      : await (await fetch("image.json?ts="+Date.now(), {cache:"no-store"})).json();
-  } catch { IMAGE = { logoDataUrl:"" }; }
+  try { IMAGE = i.status==='fulfilled' && i.value.ok ? await i.value.json()
+       : await (await fetch('image.json?ts='+Date.now(),{cache:'no-store'})).json();
+  } catch { IMAGE = { logoDataUrl:'' }; }
 
-  buildLabels(); bindTheme(); bindBranding(); bindApiLoggingAudio(); renderPreview();
+  buildLabels();
+  bindTheme();
+  bindBranding();
+  bindApiLoggingAudio();
+  renderPreview();
 }
 
-/* ========= labels ========= */
+/* ========= labels (respect CONFIG.editable=false) ========= */
 function buildLabels(){
+  const root = $('labelsSect'); root.innerHTML='';
   const defs = [
-    ["headline","Headline","Type headline…"],
-    ["recordButton","Record Button","Record your response"],
-    ["stopButton","Stop Button","Stop"],
-    ["uploadButton","Upload Button","Choose an audio file"],
-    ["SubmitForScoringButton","Submit Button","Submit for scoring"],
-    ["previousButton","Previous Button","Previous"],
-    ["nextButton","Next Button","Next"],
-    ["poweredByLabel","Powered By Label","Powered by MSS Vox"],
-    ["NotRecordingLabel","Not Recording Label","Not recording"],
+    ['headline','Headline','Type headline…'],
+    ['recordButton','Record Button','Record your response'],
+    ['stopButton','Stop Button','Stop'],
+    ['uploadButton','Upload Button','Choose an audio file'],
+    ['SubmitForScoringButton','Submit Button','Submit for scoring'],
+    ['previousButton','Previous Button','Previous'],
+    ['nextButton','Next Button','Next'],
+    ['poweredByLabel','Powered By Label','Powered by MSS Vox'],
+    ['NotRecordingLabel','Not Recording Label','Not recording'],
   ];
-  const root = $("labelsSect"); root.innerHTML="";
   defs.forEach(([key,label,ph])=>{
     const editable = CONFIG?.editable;
     if (editable && key in editable && editable[key] === false) return;
-    const row = document.createElement("div"); row.className="row";
+    const row = document.createElement('div'); row.className='row';
     row.innerHTML = `<div class="label">${label}</div><input id="f_${key}" type="text" placeholder="${esc(ph)}">`;
     root.appendChild(row);
-    const input = $("f_"+key);
-    input.value = FORM[key] ?? "";
-    input.addEventListener("input", e=>{ FORM[key]=e.target.value; renderPreview(); });
+    const input = $('f_'+key);
+    input.value = FORM[key] ?? '';
+    input.addEventListener('input', e=>{ FORM[key]=e.target.value; renderPreview(); });
   });
 }
 
 /* ========= theme ========= */
 function bindTheme(){
-  const sel = $("cfgTheme");
-  sel.value = (CONFIG.theme||"apple").toLowerCase();
-  sel.addEventListener("change", e=>{ CONFIG.theme = e.target.value; });
+  const sel = $('cfgTheme');
+  sel.value = (CONFIG.theme||'apple').toLowerCase();
+  sel.addEventListener('change', e=>{ CONFIG.theme = e.target.value; });
 }
 
 /* ========= branding ========= */
 function bindBranding(){
   const url = getLogo(IMAGE);
-  $("logoImg").src = url || "";
-  $("pvLogo").src  = url || "";
+  $('logoImg').src = url || '';
+  $('pvLogo').src  = url || '';
 
-  $("fileLogo").addEventListener("change", async (e)=>{
-    const f = e.target.files && e.target.files[0]; e.target.value="";
+  $('fileLogo').addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0]; e.target.value='';
     if (!f) return;
     const b64 = await fileToDataUrl(f);
     IMAGE.logoDataUrl = b64;
-    $("logoImg").src = b64; $("pvLogo").src = b64;
+    $('logoImg').src = b64; $('pvLogo').src = b64;
   });
-  $("clearLogo").addEventListener("click", ()=>{
-    IMAGE.logoDataUrl=""; $("logoImg").src=""; $("pvLogo").src="";
+  $('clearLogo').addEventListener('click', ()=>{
+    IMAGE.logoDataUrl=''; $('logoImg').src=''; $('pvLogo').src='';
   });
 }
 
-/* ========= API, logging, audio ========= */
+/* ========= API, Logging & Audio ========= */
 function bindApiLoggingAudio(){
-  $("cfgApiBase").value = CONFIG.api?.baseUrl || "";
-  $("cfgApiBase").addEventListener("input", e=>{ CONFIG.api ||= {}; CONFIG.api.baseUrl = e.target.value; });
+  $('cfgApiBase').value = CONFIG.api?.baseUrl || '';
+  $('cfgApiBase').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.baseUrl = e.target.value; });
 
-  $("cfgApiKey").value = CONFIG.api?.key || "";
-  $("cfgApiKey").addEventListener("input", e=>{ CONFIG.api ||= {}; CONFIG.api.key = e.target.value; });
+  $('cfgApiKey').value = CONFIG.api?.key || '';
+  $('cfgApiKey').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.key = e.target.value; });
 
-  $("cfgApiSecret").value = CONFIG.api?.secret || "";
-  $("cfgApiSecret").addEventListener("input", e=>{ CONFIG.api ||= {}; CONFIG.api.secret = e.target.value; });
+  $('cfgApiSecret').value = CONFIG.api?.secret || '';
+  $('cfgApiSecret').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.secret = e.target.value; });
 
-  $("cfgLogEnabled").checked = !!CONFIG.logger?.enabled;
-  $("cfgLogEnabled").addEventListener("change", e=>{ CONFIG.logger ||= {}; CONFIG.logger.enabled = e.target.checked; });
+  $('cfgLogEnabled').checked = !!CONFIG.logger?.enabled;
+  $('cfgLogEnabled').addEventListener('change', e=>{ CONFIG.logger ||= {}; CONFIG.logger.enabled = e.target.checked; });
 
-  $("cfgLogUrl").value = CONFIG.logger?.url || "";
-  $("cfgLogUrl").addEventListener("input", e=>{ CONFIG.logger ||= {}; CONFIG.logger.url = e.target.value; });
+  $('cfgLogUrl').value = CONFIG.logger?.url || '';
+  $('cfgLogUrl').addEventListener('input', e=>{ CONFIG.logger ||= {}; CONFIG.logger.url = e.target.value; });
 
-  $("cfgMinS").value = Number(CONFIG.audioMinSeconds ?? 30);
-  $("cfgMinS").addEventListener("input", e=>{
+  $('cfgMinS').value = Number(CONFIG.audioMinSeconds ?? 30);
+  $('cfgMinS').addEventListener('input', e=>{
     CONFIG.audioMinSeconds = Math.max(1, Number(e.target.value||30)); renderPreview();
   });
-  $("cfgMaxS").value = Number(CONFIG.audioMaxSeconds ?? 61);
-  $("cfgMaxS").addEventListener("input", e=>{
+  $('cfgMaxS').value = Number(CONFIG.audioMaxSeconds ?? 61);
+  $('cfgMaxS').addEventListener('input', e=>{
     CONFIG.audioMaxSeconds = Math.max(1, Number(e.target.value||61)); renderPreview();
   });
 }
 
 /* ========= preview ========= */
 function renderPreview(){
-  $("pvBrand").textContent = FORM.headline || "";
-  $("pvLogo").src = getLogo(IMAGE) || "";
+  $('pvBrand').textContent = FORM.headline || '';
+  $('pvLogo').src = getLogo(IMAGE) || '';
 
-  const s = Array.isArray(FORM.survey) ? FORM.survey : [];
+  const s = Array.isArray(FORM.survey)?FORM.survey:[];
   if (!s.length){
-    $("pvCounter").textContent = "";
-    $("pvQ").innerHTML = "<i>(No questions)</i>";
+    $('pvCounter').textContent = '';
+    $('pvQ').innerHTML = '<i>(No questions)</i>';
   } else {
     if (idx < 0) idx = 0;
-    if (idx >= s.length) idx = s.length - 1;
-    $("pvCounter").textContent = `Question ${idx+1} of ${s.length}`;
-    $("pvQ").innerHTML = esc(s[idx]).replace(/\n+/g,"<br>");
+    if (idx > s.length-1) idx = s.length-1;
+    $('pvCounter').textContent = `Question ${idx+1} of ${s.length}`;
+    $('pvQ').innerHTML = esc(s[idx]).replace(/\n+/g,'<br>');
   }
 
-  $("pvPrev").textContent = FORM.previousButton || "Previous";
-  $("pvNext").textContent = FORM.nextButton || "Next";
+  $('pvPrev').textContent = FORM.previousButton || 'Previous';
+  $('pvNext').textContent = FORM.nextButton || 'Next';
 
   const showPowered = (CONFIG.editable?.poweredByLabel !== false);
-  $("pvPowered").style.display = showPowered ? "" : "none";
-  if (showPowered) $("pvPowered").textContent = FORM.poweredByLabel || "Powered by MSS Vox";
+  $('pvPowered').style.display = showPowered ? '' : 'none';
+  if (showPowered) $('pvPowered').textContent = FORM.poweredByLabel || 'Powered by MSS Vox';
 
   const minS = Number(CONFIG.audioMinSeconds ?? 30);
   const maxS = Number(CONFIG.audioMaxSeconds ?? 61);
-  const mins = String(Math.floor(minS/60)).padStart(2,"0");
-  const secs = String(minS%60).padStart(2,"0");
-  const maxm = String(Math.floor(maxS/60)).padStart(2,"0");
-  const maxs = String(maxS%60).padStart(2,"0");
-  $("pvLength").textContent = `Allowed length: ${mins}:${secs}–${maxm}:${maxs}`;
+  const mins = String(Math.floor(minS/60)).padStart(2,'0');
+  const secs = String(minS%60).padStart(2,'0');
+  const maxm = String(Math.floor(maxS/60)).padStart(2,'0');
+  const maxs = String(maxS%60).padStart(2,'0');
+  $('pvLength').textContent = `Allowed length: ${mins}:${secs}–${maxm}:${maxs}`;
 }
 
+/* ========= preview nav ========= */
+$('pvPrev')?.addEventListener('click', ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx-1+s.length)%s.length; renderPreview(); });
+$('pvNext')?.addEventListener('click', ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx+1)%s.length; renderPreview(); });
+
 /* ========= remote save ========= */
+function adminHeader(){
+  const h = { 'Content-Type': 'application/json' };
+  if (ADMIN_WRITE_KEY) h['X-ADMIN-KEY'] = ADMIN_WRITE_KEY;
+  else if (CONFIG?.admin?.writeKey) h['X-ADMIN-KEY'] = String(CONFIG.admin.writeKey);
+  return h;
+}
 async function putJson(url, obj){
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", ...adminHeader() },
-    body: JSON.stringify(obj ?? {}, null, 2),
-  });
+  const res = await fetch(url, { method:'PUT', headers: adminHeader(), body: JSON.stringify(obj ?? {}, null, 2) });
   if (!res.ok) throw new Error(`PUT ${url} → ${res.status}`);
   return res.json().catch(()=> ({}));
 }
 async function saveAllRemote(){
-  const base = SERVICE_BASE.replace(/\/+$/,"");
+  const base = SERVICE_BASE.replace(/\/+$/,'');
   await putJson(`${base}/config/forms`,  FORM);
   await putJson(`${base}/config/widget`, CONFIG);
   await putJson(`${base}/config/images`, IMAGE);
+  return 'ok';
 }
 
-/* ========= local save (debug fallback) ========= */
+/* ========= local fallback ========= */
 async function saveJsonLocal(obj, name, slot){
-  const blob = new Blob([JSON.stringify(obj,null,2)], {type:"application/json"});
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
   if (window.showSaveFilePicker){
     try{
-      let handle = (slot==="form")?_fhForm:(slot==="config")?_fhConfig:_fhImage;
+      let handle = (slot==='form')?_fhForm:(slot==='config')?_fhConfig:_fhImage;
       if (handle){
-        const perm = await handle.requestPermission({mode:"readwrite"});
-        if (perm==="granted"){ const w=await handle.createWritable(); await w.write(blob); await w.close(); return; }
+        const perm = await handle.requestPermission({mode:'readwrite'});
+        if (perm==='granted'){ const w=await handle.createWritable(); await w.write(blob); await w.close(); return 'saved'; }
       }
-      handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:"JSON", accept:{"application/json":[".json"]}}]});
+      handle = await window.showSaveFilePicker({
+        suggestedName:name, types:[{description:'JSON', accept:{'application/json':['.json']}}]
+      });
       const w=await handle.createWritable(); await w.write(blob); await w.close();
-      if (slot==="form") _fhForm=handle; if (slot==="config") _fhConfig=handle; if (slot==="image") _fhImage=handle;
-      return;
-    }catch{}
+      if (slot==='form') _fhForm=handle; if (slot==='config') _fhConfig=handle; if (slot==='image') _fhImage=handle;
+      return 'saved';
+    }catch(e){ /* canceled */ }
   }
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.setAttribute("download",name);
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  return 'download';
 }
 async function saveAllLocal(){
-  await saveJsonLocal(FORM,"form.json","form");
-  await saveJsonLocal(CONFIG,"config.json","config");
-  await saveJsonLocal(IMAGE,"image.json","image");
+  await saveJsonLocal(FORM,'form.json','form');
+  await saveJsonLocal(CONFIG,'config.json','config');
+  await saveJsonLocal(IMAGE,'image.json','image');
 }
 
-/* ========= unified Save handler ========= */
+/* ========= unified save handler ========= */
 async function handleSaveAll(){
   try{
-    if (SAVE_MODE === "remote") {
+    if (SAVE_MODE === 'remote'){
       await saveAllRemote();
-      showSaveDialog();
-    } else {
-      await saveAllLocal();
-      showSaveDialog();
+      toast('Saved to server'); showSaveDialog(); return;
     }
+    await saveAllLocal(); toast('Saved to file'); showSaveDialog();
   }catch(err){
-    console.error("Remote save failed:", err);
-    alert("Remote save failed: " + (err?.message || "Unknown error"));
-    // Comment out next two lines if you *never* want local fallback:
-    await saveAllLocal();
-    showSaveDialog();
+    console.warn('Remote save failed → falling back to local:', err);
+    toast('Server save failed. Downloading files…', false);
+    await saveAllLocal(); showSaveDialog();
   }
 }
 
-/* ========= save modal & wiring ========= */
-function showSaveDialog(){ const ov=$("saveOverlay"); ov.style.display="flex"; ov.setAttribute("aria-hidden","false"); }
-function closeSaveDialog(){ const ov=$("saveOverlay"); ov.style.display="none"; ov.setAttribute("aria-hidden","true"); }
+/* ========= save modal ========= */
+function showSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('saveClose')?.focus(),0);
+}
+function closeSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='none'; ov.setAttribute('aria-hidden','true');
+}
 
-$("saveAllTop").addEventListener("click", handleSaveAll);
-$("saveAllBottom").addEventListener("click", handleSaveAll);
-$("openWidget").addEventListener("click", ()=> window.open("Widget.html","_blank","noopener"));
-$("openSurvey").addEventListener("click", ()=> window.open("WidgetSurvey.html","_blank","noopener"));
-$("saveClose").addEventListener("click", closeSaveDialog);
-$("saveOpenWidget").addEventListener("click", ()=>{ closeSaveDialog(); window.open("Widget.html","_blank","noopener"); });
-$("saveOpenSurvey").addEventListener("click", ()=>{ closeSaveDialog(); window.open("WidgetSurvey.html","_blank","noopener"); });
-$("saveCloseAdmin").addEventListener("click", ()=>{ try{ window.close(); }catch{} });
-
-/* ========= preview nav ========= */
-$("pvPrev").addEventListener("click", ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx-1+s.length)%s.length; renderPreview(); });
-$("pvNext").addEventListener("click", ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx+1)%s.length; renderPreview(); });
-
-/* ========= boot ========= */
-window.addEventListener("DOMContentLoaded", loadAll);
+/* ========= wire buttons & boot ========= */
+function wireButtons(){
+  $('saveAllTop')?.addEventListener('click', handleSaveAll);
+  $('saveAllBottom')?.addEventListener('click', handleSaveAll);
+  $('openWidget')?.addEventListener('click', ()=> window.open('Widget.html','_blank','noopener'));
+  $('openSurvey')?.addEventListener('click', ()=> window.open('WidgetSurvey.html','_blank','noopener'));
+  $('saveClose')?.addEventListener('click', closeSaveDialog);
+  $('saveOpenWidget')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('Widget.html','_blank','noopener'); });
+  $('saveOpenSurvey')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('WidgetSurvey.html','_blank','noopener'); });
+  $('saveCloseAdmin')?.addEventListener('click', ()=>{ try{ window.close(); }catch{} });
+}
+window.addEventListener('DOMContentLoaded', async ()=>{ await loadAll(); wireButtons(); });
 </script>
 </body>
 </html>
