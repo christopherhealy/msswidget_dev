@@ -1,101 +1,259 @@
-// server.js (ES module)
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs/promises";
+// server.js
+// MSS Widget – Render service
+// - serves public/
+// - serves GET/PUT for 3 config files
+// - falls back to repo /src if /data is empty
+// - simple CSV logger
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 
-/* ---------- CONFIG ---------- */
-const ADMIN_WRITE_KEY = process.env.ADMIN_WRITE_KEY || ""; // optional
-// If you want to restrict, replace origin: true with a whitelist check.
-app.use(cors({
-  origin: true,
-  methods: ["GET", "PUT", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "X-ADMIN-KEY"],
-}));
-app.use(express.json({ limit: "2mb" }));
+// --------------------------------------------------
+// basic env
+// --------------------------------------------------
+const PORT = process.env.PORT || 10000;
 
-/* ---------- STATIC (optional) ---------- */
-// If you deploy the admin/widget from this service too:
-app.use(express.static(path.join(__dirname, "public")));
+// absolute paths on Render
+// (this is where the repo lives at runtime)
+const ROOT_DIR = process.cwd(); // /opt/render/project/src
+const PUBLIC_DIR = path.join(ROOT_DIR, "public");
+const SRC_DIR = path.join(ROOT_DIR, "src");   // committed JSONs live here
+const DATA_DIR = path.join(ROOT_DIR, "data"); // runtime-writable
 
-/* ---------- STORAGE (JSON files on disk) ---------- */
-// IMPORTANT on Render: attach a *Persistent Disk* and mount it to this path.
-const dataDir = path.join(__dirname, "data");
-await fs.mkdir(dataDir, { recursive: true });
-
-const files = {
-  forms:  path.join(dataDir, "form.json"),
-  widget: path.join(dataDir, "config.json"),
-  images: path.join(dataDir, "image.json"),
-};
-
-async function readJson(file, fallback) {
-  try { return JSON.parse(await fs.readFile(file, "utf8")); }
-  catch { return fallback; }
-}
-async function writeJson(file, obj) {
-  await fs.writeFile(file, JSON.stringify(obj ?? {}, null, 2), "utf8");
+// make sure /data exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// --------------------------------------------------
+// middleware
+// --------------------------------------------------
+app.use(cors());
+app.use(express.json({ limit: "5mb" }));
+
+// static (for Widget.html, WidgetAdmin.html, WidgetSurvey.html, themes, etc.)
+app.use(express.static(PUBLIC_DIR));
+
+// --------------------------------------------------
+// helpers
+// --------------------------------------------------
+function readJsonFile(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const txt = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(txt);
+  } catch (err) {
+    console.warn("JSON parse failed for:", filePath, err.message);
+    return null;
+  }
+}
+
+function writeJsonFile(filePath, obj) {
+  fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), "utf8");
+}
+
+function getConfigObject(kind) {
+  // kind: "widget" | "forms" | "images"
+  const fileName =
+    kind === "widget"
+      ? "config.json"
+      : kind === "forms"
+      ? "form.json"
+      : "image.json";
+
+  const dataFile = path.join(DATA_DIR, fileName);
+  const srcFile = path.join(SRC_DIR, fileName);
+
+  // 1) try runtime data first
+  let obj = readJsonFile(dataFile);
+  if (obj) return obj;
+
+  // 2) then repo src
+  obj = readJsonFile(srcFile);
+  if (obj) return obj;
+
+  // 3) finally, baked-in defaults
+  if (kind === "widget") {
+    return {
+      editable: {
+        headline: true,
+        recordButton: true,
+        previousButton: true,
+        nextButton: true,
+        poweredByLabel: true,
+        uploadButton: true,
+        stopButton: true,
+        NotRecordingLabel: true,
+        SubmitForScoringButton: true
+      },
+      theme: "apple",
+      api: {
+        enabled: true,
+        baseUrl: "https://app.myspeakingscore.com",
+        // your current keys – you can remove them if you want to keep them only in /src
+        key: "6830272b-7a34-4341-a367-8eb840664976",
+        secret: "1e9f78e2-ec19-4727-8434-fd7df9a8bd5a"
+      },
+      logger: {
+        enabled: true,
+        url: "https://msswidget-dev.onrender.com/log/submission"
+      },
+      audioMinSeconds: 20,
+      audioMaxSeconds: 90
+    };
+  }
+
+  if (kind === "forms") {
+    return {
+      headline: "Practice TOEFL Speaking Test",
+      poweredByLabel: "Powered by MSS Vox",
+      recordButton: "Record your response",
+      stopButton: "Stop",
+      uploadButton: "Choose an audio file",
+      SubmitForScoringButton: "Submit for scoring",
+      previousButton: "Previous",
+      nextButton: "Next",
+      NotRecordingLabel: "Not recording",
+      survey: ["Tell me about your hometown."]
+    };
+  }
+
+  // images default
+  return {
+    logoDataUrl: ""
+  };
+}
+
+function saveConfigObject(kind, obj) {
+  const fileName =
+    kind === "widget"
+      ? "config.json"
+      : kind === "forms"
+      ? "form.json"
+      : "image.json";
+  const dataFile = path.join(DATA_DIR, fileName);
+  writeJsonFile(dataFile, obj);
+}
+
+// --------------------------------------------------
+// small admin guard (optional)
+// --------------------------------------------------
 function requireAdmin(req, res, next) {
-  if (!ADMIN_WRITE_KEY) return next(); // auth disabled if no key set
-  const key = req.get("X-ADMIN-KEY") || "";
-  if (key !== ADMIN_WRITE_KEY) return res.status(401).json({ error: "Unauthorized" });
-  next();
+  const configuredKey = process.env.ADMIN_WRITE_KEY || ""; // set in Render if you want
+  if (!configuredKey) {
+    // no key set -> allow everyone
+    return next();
+  }
+  const incomingKey = req.header("X-ADMIN-KEY") || "";
+  if (incomingKey && incomingKey === configuredKey) return next();
+  return res.status(401).json({ ok: false, error: "unauthorized" });
 }
 
-/* ---------- GET (Widget & Admin read) ---------- */
-app.get("/config/forms",  async (_req, res) => {
-  res.json(await readJson(files.forms,  { headline: "Practice TOEFL Speaking Test", survey: [] }));
-});
-app.get("/config/widget", async (_req, res) => {
-  res.json(await readJson(files.widget, {
-    editable: {
-      headline: true, recordButton: true, previousButton: true, nextButton: true,
-      poweredByLabel: true, uploadButton: true, stopButton: true,
-      NotRecordingLabel: true, SubmitForScoringButton: true
-    },
-    theme: "apple",
-    api: { enabled: true, baseUrl: "", key: "", secret: "" },
-    logger: { enabled: false, url: "" },
-    audioMinSeconds: 30,
-    audioMaxSeconds: 61
-  }));
-});
-app.get("/config/images", async (_req, res) => {
-  res.json(await readJson(files.images, { logoDataUrl: "" }));
+// --------------------------------------------------
+// routes: health
+// --------------------------------------------------
+app.get("/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
 });
 
-/* ---------- PUT (Admin save) ---------- */
-app.put("/config/forms",  requireAdmin, async (req, res) => {
-  await writeJson(files.forms,  req.body);
-  res.json({ ok: true });
+// --------------------------------------------------
+// routes: GET configs
+// --------------------------------------------------
+app.get("/config/widget", (req, res) => {
+  const cfg = getConfigObject("widget");
+  res.json(cfg);
 });
-app.put("/config/widget", requireAdmin, async (req, res) => {
-  await writeJson(files.widget, req.body);
-  res.json({ ok: true });
+
+app.get("/config/forms", (req, res) => {
+  const frm = getConfigObject("forms");
+  res.json(frm);
 });
-app.put("/config/images", requireAdmin, async (req, res) => {
-  await writeJson(files.images, req.body);
+
+app.get("/config/images", (req, res) => {
+  const img = getConfigObject("images");
+  res.json(img);
+});
+
+// --------------------------------------------------
+// routes: PUT configs (WidgetAdmin will call these)
+// --------------------------------------------------
+app.put("/config/widget", requireAdmin, (req, res) => {
+  saveConfigObject("widget", req.body || {});
   res.json({ ok: true });
 });
 
-/* ---------- Optional: submission logging used by the widget ---------- */
-app.post("/log/submission", async (req, res) => {
-  // Keep simple; feel free to append to a file instead.
-  console.log("[log/submission]", req.body);
+app.put("/config/forms", requireAdmin, (req, res) => {
+  saveConfigObject("forms", req.body || {});
   res.json({ ok: true });
 });
 
-/* ---------- Health ---------- */
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.put("/config/images", requireAdmin, (req, res) => {
+  saveConfigObject("images", req.body || {});
+  res.json({ ok: true });
+});
 
-/* ---------- Start ---------- */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("MSS widget service listening on", PORT));
+// --------------------------------------------------
+// logging
+// --------------------------------------------------
+app.post("/log/submission", express.json(), (req, res) => {
+  try {
+    const logFile = path.join(DATA_DIR, "log.csv");
+    const {
+      timestamp = new Date().toISOString(),
+      ip = req.ip || "",
+      userId = "",
+      fileName = "",
+      lengthSec = "",
+      submitTime = "",
+      toefl = "",
+      ielts = "",
+      pte = "",
+      cefr = "",
+      question = "",
+      transcript = "",
+      wpm = ""
+    } = req.body || {};
+
+    const line = [
+      timestamp,
+      ip,
+      userId,
+      fileName,
+      lengthSec,
+      submitTime,
+      toefl,
+      ielts,
+      pte,
+      cefr,
+      JSON.stringify(question),
+      JSON.stringify(transcript),
+      wpm
+    ].join(",");
+
+    const exists = fs.existsSync(logFile);
+    if (!exists) {
+      fs.writeFileSync(
+        logFile,
+        "timestamp,ip,userId,fileName,lengthSec,submitTime,toefl,ielts,pte,cefr,question,transcript,wpm\n",
+        "utf8"
+      );
+    }
+    fs.appendFileSync(logFile, line + "\n", "utf8");
+
+    res.json({ ok: true, file: "log.csv" });
+  } catch (err) {
+    console.error("log write failed:", err);
+    res.status(500).json({ ok: false, error: "log failed" });
+  }
+});
+
+// --------------------------------------------------
+// start
+// --------------------------------------------------
+app.listen(PORT, () => {
+  console.log("✅ MSS Widget service running on port", PORT);
+});
