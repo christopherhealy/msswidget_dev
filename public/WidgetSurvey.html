@@ -22,7 +22,6 @@
   .muted{color:#6b7280; font-size:12px}
   .body{padding:14px}
 
-  /* List rows */
   .row{
     display:grid; grid-template-columns: 48px 1fr auto; align-items:start;
     gap:12px; padding:10px 12px; border:1px solid var(--mss-edge); border-radius:12px;
@@ -35,7 +34,6 @@
     margin-bottom:10px;
   }
 
-  /* Drag handle (index circle) */
   .idx{
     width:40px;height:40px;border-radius:10px;border:1px solid var(--mss-edge);
     display:flex;align-items:center;justify-content:center;font-weight:600;background:#f9fafb;
@@ -58,7 +56,6 @@
   .toolbar .spacer{flex:1}
   #status{font-size:13px;margin-left:auto}
 
-  /* Modals: add/edit */
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2100}
   .modal{width:min(700px,95vw);background:#fff;border:1px solid var(--mss-edge);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden}
   .modalHead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--mss-edge)}
@@ -66,7 +63,6 @@
   .modalFoot{display:flex;gap:8px;justify-content:flex-end;padding:12px;border-top:1px solid var(--mss-edge)}
   .ta{width:100%;min-height:200px;border:1px solid var(--mss-edge);border-radius:12px;padding:12px;font:inherit}
 
-  /* Finish / Confirm */
   .finishOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2100}
   .finishDlg{width:min(420px,94vw);background:#fff;border:1px solid var(--mss-edge);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:18px}
   .finishDlg h3{margin:0 0 8px 0;font-size:16px}
@@ -91,9 +87,8 @@
     </div>
 
     <div class="body">
-      <!-- Top toolbar -->
       <div class="toolbar" style="margin-bottom:10px;">
-        <button id="addBtnTop" class="btn">＋ Add</button>
+        <button id="addBtnTop" type="button" class="btn">＋ Add</button>
 
         <div class="spacer"></div>
 
@@ -107,23 +102,22 @@
           CSV Import
         </label>
 
-        <button id="exportBtnTop" class="btn">Export</button>
-        <button id="saveToFileBtnTop" class="btn">Save to file…</button>
-        <button id="finishedBtnTop" class="btn primary">Finished…</button>
+        <button id="exportBtnTop" type="button" class="btn">Export</button>
+        <button id="saveToFileBtnTop" type="button" class="btn">Save to file…</button>
+        <button id="finishedBtnTop" type="button" class="btn primary">Finished…</button>
         <span id="status" class="muted"></span>
       </div>
 
       <div id="list"></div>
 
-      <!-- Bottom toolbar (same actions) -->
       <div class="toolbar" style="margin-top:10px;">
-        <button id="addBtnBottom" class="btn">＋ Add</button>
+        <button id="addBtnBottom" type="button" class="btn">＋ Add</button>
 
         <div class="spacer"></div>
 
-        <button id="exportBtnBottom" class="btn">Export</button>
-        <button id="saveToFileBtnBottom" class="btn">Save to file…</button>
-        <button id="finishedBtnBottom" class="btn primary">Finished…</button>
+        <button id="exportBtnBottom" type="button" class="btn">Export</button>
+        <button id="saveToFileBtnBottom" type="button" class="btn">Save to file…</button>
+        <button id="finishedBtnBottom" type="button" class="btn primary">Finished…</button>
       </div>
     </div>
 
@@ -140,10 +134,10 @@
         <textarea id="aeTextarea" class="ta" placeholder="Type the question here…"></textarea>
       </div>
       <div class="modalFoot">
-        <button id="aeCancel" class="btn">Cancel</button>
-        <button id="aeSave" class="btn">Save</button>
-        <button id="aeSaveNew" class="btn">Save & New</button>
-        <button id="aeClose" class="btn primary">Close</button>
+        <button id="aeCancel" type="button" class="btn">Cancel</button>
+        <button id="aeSave" type="button" class="btn">Save</button>
+        <button id="aeSaveNew" type="button" class="btn">Save & New</button>
+        <button id="aeClose" type="button" class="btn primary">Close</button>
       </div>
     </div>
   </div>
@@ -154,40 +148,41 @@
       <h3>Do you want to save your changes before leaving?</h3>
       <p><b>Save</b> writes to <code>form.json</code> (clean filename) or downloads if blocked.</p>
       <div class="finishBtns">
-        <button id="finishCancel" class="btn" type="button">Cancel</button>
-        <button id="finishNoSave" class="btn" type="button">Don't Save</button>
-        <button id="finishSave" class="btn primary" type="button">Save</button>
+        <button id="finishCancel" type="button" class="btn">Cancel</button>
+        <button id="finishNoSave" type="button" class="btn">Don't Save</button>
+        <button id="finishSave" type="button" class="btn primary">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- Confirm dialog (remove / unsaved close) -->
+  <!-- Confirm dialog -->
   <div id="confirmOverlay" class="confirmOverlay" aria-hidden="true">
     <div class="confirmDlg">
       <h3 id="confirmTitle">Confirm</h3>
       <p id="confirmMsg">Are you sure?</p>
       <div class="confirmBtns">
-        <button id="confirmCancel" class="btn" type="button">Cancel</button>
-        <button id="confirmOk" class="btn primary" type="button">OK</button>
+        <button id="confirmCancel" type="button" class="btn">Cancel</button>
+        <button id="confirmOk" type="button" class="btn primary">OK</button>
       </div>
     </div>
   </div>
 
 <script>
-  // ========= CHANGES: centralize service base & remote loader =========
-  const SERVICE_BASE = 'https://msswidget-dev.onrender.com'; // Render service root
+  /* ========= service base ========= */
+  const SERVICE_BASE = 'https://msswidget-dev.onrender.com';
 
-  // -------- State --------
+  /* ========= state ========= */
   let schema = null;
   let survey = [];
-  let _fileHandle = null; // for File System Access API
-  let aeMode = 'add';     // 'add' | 'edit'
-  let aeIndex = -1;       // index for edit
-  let aeDirty = false;    // track unsaved text in modal
+  let _fileHandle = null;
+  let aeMode = 'add'; // 'add' | 'edit'
+  let aeIndex = -1;
+  let aeDirty = false;
 
-  // -------- Helpers --------
+  /* ========= helpers ========= */
+  const $ = (id)=>document.getElementById(id);
   function setStatus(msg, ok=true){
-    const el = document.getElementById('status');
+    const el = $('status');
     el.textContent = (ok ? '✅ ' : '⚠️ ') + msg;
     el.style.color = ok ? 'green' : '#b45309';
     clearTimeout(setStatus._t);
@@ -202,29 +197,7 @@
   }
   function getMerged(){ return { ...schema, survey: survey.slice() }; }
 
-  // Home-tab smart return
-  async function smartGoHome(){
-    let homeAlive = false;
-    try{
-      homeAlive = await new Promise((resolve)=>{
-        const ch = new BroadcastChannel('mss-home');
-        let answered = false;
-        ch.onmessage = (e)=>{
-          if (e?.data === 'mss:home:alive'){ answered = true; ch.postMessage('mss:home:pleaseFocus'); ch.close?.(); resolve(true); }
-        };
-        ch.postMessage('mss:home:ping');
-        setTimeout(()=>{ if (!answered) ch.close?.(); resolve(false); }, 300);
-      });
-    }catch{}
-    if (homeAlive){
-      try{ if (window.opener && !window.opener.closed) window.opener.focus(); }catch{}
-      window.close();
-      return;
-    }
-    window.location.href = 'index.html';
-  }
-
-  // -------- Render list --------
+  /* ========= render list ========= */
   function move(idx, dir){
     const j = idx + dir;
     if (j < 0 || j >= survey.length) return;
@@ -240,7 +213,7 @@
     render();
   }
   function render(){
-    const list = document.getElementById('list');
+    const list = $('list');
     if (!survey.length){
       list.innerHTML = `<div class="muted">No questions found. Click <b>＋ Add</b> or use <b>Import</b>/<b>CSV Import</b>.</div>`;
       return;
@@ -250,23 +223,21 @@
         <div class="idx" title="Drag to reorder">${i+1}</div>
         <div>${summarize(q)}</div>
         <div class="ctrls">
-          <button class="btn" data-act="edit">Edit</button>
-          <button class="btn" data-act="top">Top</button>
-          <button class="btn" data-act="up">Up</button>
-          <button class="btn" data-act="down">Down</button>
-          <button class="btn" data-act="bottom">Bottom</button>
-          <button class="btn" data-act="remove">✕</button>
+          <button type="button" class="btn" data-act="edit">Edit</button>
+          <button type="button" class="btn" data-act="top">Top</button>
+          <button type="button" class="btn" data-act="up">Up</button>
+          <button type="button" class="btn" data-act="down">Down</button>
+          <button type="button" class="btn" data-act="bottom">Bottom</button>
+          <button type="button" class="btn" data-act="remove">✕</button>
         </div>
       </div>
     `).join('');
     wireDnd(list);
   }
 
-  // -------- Drag & drop --------
+  /* ========= drag & drop ========= */
   function wireDnd(container){
-    let placeholder = null;
-    let draggingRow = null;
-    let dragSrcIndex = null;
+    let placeholder = null, draggingRow = null, dragSrcIndex = null;
 
     container.querySelectorAll('.row').forEach(row => {
       row.dataset.allow = "";
@@ -341,71 +312,59 @@
     }
   }
 
-  // -------- Add / Edit modals --------
+  /* ========= Add/Edit modals ========= */
   function openAddModal(){
     aeMode = 'add'; aeIndex = -1; aeDirty = false;
-    document.getElementById('aeTitle').textContent = 'Add Question';
-    document.getElementById('aeTextarea').value = '';
+    $('aeTitle').textContent = 'Add Question';
+    $('aeTextarea').value = '';
     showOverlay('aeOverlay', true);
   }
   function openEditModal(index){
     aeMode = 'edit'; aeIndex = index; aeDirty = false;
-    document.getElementById('aeTitle').textContent = 'Edit Question';
-    document.getElementById('aeTextarea').value = survey[index] || '';
+    $('aeTitle').textContent = 'Edit Question';
+    $('aeTextarea').value = survey[index] || '';
     showOverlay('aeOverlay', true);
   }
-
   function showOverlay(id, show){
-    const el = document.getElementById(id);
+    const el = $(id);
     el.style.display = show ? 'flex' : 'none';
-    el.setAttribute('aria-hidden', show ? 'true' : 'false');
+    el.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
-
   function wireAddEdit(){
-    const ta = document.getElementById('aeTextarea');
+    const ta = $('aeTextarea');
     ta.addEventListener('input', ()=> aeDirty = true);
 
-    document.getElementById('aeCancel').addEventListener('click', ()=>{
-      document.getElementById('aeTextarea').value = '';
+    $('aeCancel').addEventListener('click', ()=>{
+      $('aeTextarea').value = '';
       aeDirty = false;
       showOverlay('aeOverlay', false);
     });
-
-    document.getElementById('aeSave').addEventListener('click', ()=>{
+    $('aeSave').addEventListener('click', ()=>{
       const v = ta.value.trim();
       if (!v){ setStatus('Nothing to save', false); return; }
       if (aeMode === 'add'){ survey.push(v); }
       else if (aeMode === 'edit' && aeIndex > -1) { survey[aeIndex] = v; }
       aeDirty = false;
-      render();
-      setStatus('Saved');
+      render(); setStatus('Saved');
     });
-
-    document.getElementById('aeSaveNew').addEventListener('click', ()=>{
+    $('aeSaveNew').addEventListener('click', ()=>{
       const v = ta.value.trim();
       if (!v){ setStatus('Nothing to save', false); return; }
       if (aeMode === 'edit' && aeIndex > -1) { survey[aeIndex] = v; }
       else { survey.push(v); }
-      render();
-      ta.value = '';
-      aeMode = 'add'; aeIndex = -1; aeDirty = false;
+      render(); ta.value = ''; aeMode = 'add'; aeIndex = -1; aeDirty = false;
       setStatus('Saved. Ready for next.');
     });
-
-    document.getElementById('aeClose').addEventListener('click', async ()=>{
-      if (aeDirty && ta.value.trim()){
+    $('aeClose').addEventListener('click', async ()=>{
+      if (aeDirty && $('aeTextarea').value.trim()){
         const choice = await triConfirm('Save your question?', 'No', 'Cancel', 'Save');
         if (choice === 'save'){
-          const v = ta.value.trim();
+          const v = $('aeTextarea').value.trim();
           if (aeMode === 'add') survey.push(v);
           else if (aeMode === 'edit' && aeIndex > -1) survey[aeIndex] = v;
-          render();
-          aeDirty = false;
-          showOverlay('aeOverlay', false);
-          setStatus('Saved');
+          render(); aeDirty = false; showOverlay('aeOverlay', false); setStatus('Saved');
         } else if (choice === 'nosave'){
-          aeDirty = false;
-          showOverlay('aeOverlay', false);
+          aeDirty = false; showOverlay('aeOverlay', false);
         }
       } else {
         showOverlay('aeOverlay', false);
@@ -413,16 +372,14 @@
     });
   }
 
-  // Remove with dialog
   async function confirmRemove(index){
     const ok = await twoBtnConfirm('Remove this question?', 'Cancel', 'Remove');
     if (!ok) return;
     survey.splice(index, 1);
-    render();
-    setStatus('Question removed');
+    render(); setStatus('Question removed');
   }
 
-  // -------- Import / Export --------
+  /* ========= Import/Export ========= */
   function exportJson(){
     const merged = getMerged();
     const a = document.createElement('a');
@@ -432,37 +389,29 @@
     setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
     setStatus('Exported');
   }
-
   function wireImportJson(){
-    const f = document.getElementById('importJson');
+    const f = $('importJson');
     f.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0];
       e.target.value = '';
       if (!file) return;
       try{
-        const text = await file.text();
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(await file.text());
         if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON object.');
         schema = parsed;
         survey = Array.isArray(parsed.survey) ? parsed.survey.slice() : [];
-        setStatus('Imported JSON');
-        render();
-        document.getElementById('meta').textContent =
-          (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
-      }catch(err){
-        alert('Import failed: ' + err.message);
-      }
+        setStatus('Imported JSON'); render();
+        $('meta').textContent = (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
+      }catch(err){ alert('Import failed: ' + err.message); }
     });
   }
-
   function wireImportCsv(){
-    const f = document.getElementById('importCsv');
+    const f = $('importCsv');
     f.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0];
       e.target.value = '';
       if (!file) return;
-      let text = await file.text();
-      const rows = parseCSV(text);
+      const rows = parseCSV(await file.text());
       if (!rows.length){ setStatus('CSV is empty', false); return; }
 
       const col = findSingleDataColumn(rows);
@@ -479,27 +428,19 @@
       const choice = await triConfirm('Append to existing questions?', 'Replace', 'Cancel', 'Append');
       if (choice === 'cancel') return;
 
-      if (choice === 'save'){ // Append
-        survey = survey.concat(questions);
-      } else if (choice === 'nosave'){ // Replace
-        survey = questions.slice();
-      }
-      render();
-      setStatus('CSV imported');
+      if (choice === 'save'){ survey = survey.concat(questions); }
+      else if (choice === 'nosave'){ survey = questions.slice(); }
+      render(); setStatus('CSV imported');
     });
   }
-
   function normalizeCell(s){
     if (s == null) return '';
     let t = String(s).replace(/\r\n/g, '\n').trim();
-    t = t.replace(/\n+/g, ' // ');
-    t = t.replace(/\s*\/\/\s*/g, ' // ');
+    t = t.replace(/\n+/g, ' // ').replace(/\s*\/\/\s*/g, ' // ');
     return t;
   }
-
   function parseCSV(text){
-    const rows = [];
-    let field = '', row = [], inQuotes = false;
+    const rows = []; let field = '', row = [], inQuotes = false;
     for (let i=0; i<text.length; i++){
       const c = text[i], next = text[i+1];
       if (inQuotes){
@@ -517,7 +458,6 @@
     while (rows.length && rows[rows.length-1].every(v => String(v).trim() === '')) rows.pop();
     return rows;
   }
-
   function findSingleDataColumn(rows){
     let maxCols = Math.max(...rows.map(r => r.length));
     let idx = -1;
@@ -528,10 +468,9 @@
     return idx;
   }
 
-  // -------- Save (File System Access API) --------
+  /* ========= Save to file picker ========= */
   async function saveToFilePicker(jsonObj, suggestedName='form.json'){
     const blob = new Blob([JSON.stringify(jsonObj, null, 2)], { type:'application/json' });
-
     if (!('showSaveFilePicker' in window)){
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -555,43 +494,38 @@
       const w = await _fileHandle.createWritable();
       await w.write(blob); await w.close();
       return 'saved';
-    }catch(e){
-      console.warn('Save canceled/failed:', e);
-      return 'canceled';
-    }
+    }catch(e){ console.warn('Save canceled/failed:', e); return 'canceled'; }
   }
 
-  // -------- Finished flow --------
+  /* ========= Finish flow ========= */
   function showFinishDialog(){
     return new Promise(resolve=>{
-      const ov = document.getElementById('finishOverlay');
+      const ov = $('finishOverlay');
       ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
-      document.getElementById('finishSave').onclick   = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('save'); };
-      document.getElementById('finishNoSave').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('nosave'); };
-      document.getElementById('finishCancel').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('cancel'); };
+      $('finishSave').onclick   = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('save'); };
+      $('finishNoSave').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('nosave'); };
+      $('finishCancel').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('cancel'); };
     });
   }
-
   async function finishedFlow(){
     const choice = await showFinishDialog();
     if (choice === 'save'){
       const r = await saveToFilePicker(getMerged(), 'form.json');
       if (r==='saved') setStatus('Saved to file');
       else if (r==='download') setStatus('Downloaded');
-      await smartGoHome();
+      window.location.href = 'index.html';
     } else if (choice === 'nosave'){
-      await smartGoHome();
+      window.location.href = 'index.html';
     }
   }
 
-  // -------- Tiny dialog helpers --------
+  /* ========= tiny confirms ========= */
   function twoBtnConfirm(title, cancelLabel='Cancel', okLabel='OK'){
     return new Promise(resolve=>{
-      const ov = document.getElementById('confirmOverlay');
-      document.getElementById('confirmTitle').textContent = title;
-      document.getElementById('confirmMsg').textContent = '';
-      const ok = document.getElementById('confirmOk');
-      const cancel = document.getElementById('confirmCancel');
+      const ov = $('confirmOverlay');
+      $('confirmTitle').textContent = title;
+      $('confirmMsg').textContent = '';
+      const ok = $('confirmOk'); const cancel = $('confirmCancel');
       ok.textContent = okLabel; cancel.textContent = cancelLabel;
       ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
       const cleanup = (val)=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); ok.onclick = cancel.onclick = null; resolve(val); };
@@ -601,36 +535,28 @@
   }
   function triConfirm(title, leftLabel='No', middleLabel='Cancel', rightLabel='Yes'){
     return new Promise(resolve=>{
-      const ov = document.getElementById('confirmOverlay');
-      document.getElementById('confirmTitle').textContent = title;
-      document.getElementById('confirmMsg').textContent = '';
-      const ok = document.getElementById('confirmOk');
-      const cancel = document.getElementById('confirmCancel');
+      const ov = $('confirmOverlay');
+      $('confirmTitle').textContent = title;
+      $('confirmMsg').textContent = '';
+      const ok = $('confirmOk'); const cancel = $('confirmCancel');
 
       const wrap = ok.parentNode;
       wrap.innerHTML = '';
-      const left = document.createElement('button');
-      left.className='btn'; left.type='button'; left.textContent=leftLabel;
-      const mid = document.createElement('button');
-      mid.className='btn'; mid.type='button'; mid.textContent=middleLabel;
-      const right = document.createElement('button');
-      right.className='btn primary'; right.type='button'; right.textContent=rightLabel;
+      const left = Object.assign(document.createElement('button'), { className:'btn', type:'button', textContent:leftLabel });
+      const mid  = Object.assign(document.createElement('button'), { className:'btn', type:'button', textContent:middleLabel });
+      const right= Object.assign(document.createElement('button'), { className:'btn primary', type:'button', textContent:rightLabel });
       wrap.appendChild(left); wrap.appendChild(mid); wrap.appendChild(right);
 
       ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
 
-      const cleanup = ()=> {
-        ov.style.display='none'; ov.setAttribute('aria-hidden','true');
-        wrap.innerHTML=''; wrap.appendChild(cancel); wrap.appendChild(ok);
-      };
-
+      const cleanup = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); wrap.innerHTML=''; wrap.appendChild(cancel); wrap.appendChild(ok); };
       left.onclick  = ()=>{ cleanup(); resolve('nosave'); };
       mid.onclick   = ()=>{ cleanup(); resolve('cancel'); };
       right.onclick = ()=>{ cleanup(); resolve('save'); };
     });
   }
 
-  // -------- Load initial form.json (REMOTE FIRST, local fallback) --------
+  /* ========= load initial (Render first, local fallback) ========= */
   async function load(){
     try{
       const r = await fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`, { cache: 'no-store' });
@@ -642,39 +568,61 @@
       schema = await res.json();
     }
     survey = Array.isArray(schema.survey) ? schema.survey.slice() : [];
-    document.getElementById('meta').textContent =
-      (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
+    $('meta').textContent = (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
     render();
   }
 
-  // -------- Boot --------
+  /* ========= event delegation for row buttons ========= */
+  function wireRowActions(){
+    const listEl = $('list');
+    listEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const row = btn.closest('.row');
+      if (!row) return;
+      const i = Number(row.getAttribute('data-idx'));
+      switch (btn.dataset.act) {
+        case 'edit':   openEditModal(i); break;
+        case 'top':    moveTo(i, 0); break;
+        case 'up':     move(i, -1); break;
+        case 'down':   move(i, +1); break;
+        case 'bottom': moveTo(i, survey.length - 1); break;
+        case 'remove': confirmRemove(i); break;
+      }
+    });
+  }
+
+  /* ========= boot ========= */
   window.addEventListener('DOMContentLoaded', ()=>{
     load();
 
-    // Top & bottom add buttons
-    document.getElementById('addBtnTop').addEventListener('click', openAddModal);
-    document.getElementById('addBtnBottom').addEventListener('click', openAddModal);
+    // row actions
+    wireRowActions();
 
-    // Wire add/edit modal actions
+    // Add buttons
+    $('addBtnTop').addEventListener('click', openAddModal);
+    $('addBtnBottom').addEventListener('click', openAddModal);
+
+    // modals
     wireAddEdit();
 
-    // Export (top & bottom)
-    document.getElementById('exportBtnTop').addEventListener('click', exportJson);
-    document.getElementById('exportBtnBottom').addEventListener('click', exportJson);
+    // Export
+    $('exportBtnTop').addEventListener('click', exportJson);
+    $('exportBtnBottom').addEventListener('click', exportJson);
 
-    // Save to file (top & bottom)
+    // Save to file
     const saveMerged = async ()=> {
       const r = await saveToFilePicker(getMerged(), 'form.json');
       setStatus(r==='saved' ? 'Saved to file' : r==='download' ? 'Downloaded' : 'Canceled', r!=='canceled');
     };
-    document.getElementById('saveToFileBtnTop').addEventListener('click', saveMerged);
-    document.getElementById('saveToFileBtnBottom').addEventListener('click', saveMerged);
+    $('saveToFileBtnTop').addEventListener('click', saveMerged);
+    $('saveToFileBtnBottom').addEventListener('click', saveMerged);
 
-    // Finished (top & bottom)
-    document.getElementById('finishedBtnTop').addEventListener('click', finishedFlow);
-    document.getElementById('finishedBtnBottom').addEventListener('click', finishedFlow);
+    // Finished
+    $('finishedBtnTop').addEventListener('click', finishedFlow);
+    $('finishedBtnBottom').addEventListener('click', finishedFlow);
 
-    // Import JSON / CSV
+    // Imports
     wireImportJson();
     wireImportCsv();
   });
