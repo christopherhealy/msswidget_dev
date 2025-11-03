@@ -1,266 +1,251 @@
-// server.js (ESM)
-
+// server.js (ESM, works with "type": "module")
 import express from "express";
 import cors from "cors";
-import fs from "fs";
-import fsp from "fs/promises";
+import fs from "fs/promises";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT = __dirname;
+const SRC_DIR = path.join(ROOT, "src");
+const PUBLIC_DIR = path.join(ROOT, "public");
+
+// CSV log in /tmp (ephemeral on free Render)
+const LOG_CSV = "/tmp/msswidget-log.csv";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// ---------- Paths ----------
-const ROOT = process.cwd();
-const PUBLIC_DIR = path.join(ROOT, "public");
-const SRC_DIR = path.join(ROOT, "src");
+/* ---------- middleware ---------- */
+app.use(
+  cors({
+    origin: "*", // fine for dev / admin tools
+    methods: ["GET", "POST", "PUT", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-ADMIN-KEY", "API-KEY", "X-API-SECRET"],
+  })
+);
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-// config files
-const FORM_FILE   = path.join(SRC_DIR, "form.json");
-const WIDGET_FILE = path.join(SRC_DIR, "config.json");
-const IMAGE_FILE  = path.join(SRC_DIR, "image.json");
-
-// logging files (ephemeral, fine for dev)
-const CSV_PATH   = "/tmp/logger.csv";
-const NOTES_PATH = "/tmp/notes.json";
-
-// ---------- Middleware ----------
-app.use(cors());
-app.use(express.json());
-
-// serve your HTML/JS/CSS from public/
+// Serve static files (for local testing of Widget.html etc.)
 app.use(express.static(PUBLIC_DIR));
 
-/* ------------------------------------------------------------------
-   Helpers for JSON config files
------------------------------------------------------------------- */
-async function readJsonSafe(filePath, fallback) {
+/* ---------- helpers ---------- */
+
+async function ensureSrcDir() {
   try {
-    const txt = await fsp.readFile(filePath, "utf8");
+    await fs.mkdir(SRC_DIR, { recursive: true });
+  } catch {
+    // ignore
+  }
+}
+
+async function readJson(rel, fallback = {}) {
+  await ensureSrcDir();
+  const full = path.join(SRC_DIR, rel);
+  try {
+    const txt = await fs.readFile(full, "utf8");
     return JSON.parse(txt);
   } catch {
+    // create default if missing
+    await fs.writeFile(full, JSON.stringify(fallback, null, 2), "utf8");
     return fallback;
   }
 }
 
-async function writeJsonSafe(filePath, obj) {
-  await fsp.mkdir(path.dirname(filePath), { recursive: true });
-  await fsp.writeFile(filePath, JSON.stringify(obj ?? {}, null, 2), "utf8");
+async function writeJson(rel, obj) {
+  await ensureSrcDir();
+  const full = path.join(SRC_DIR, rel);
+  await fs.writeFile(full, JSON.stringify(obj ?? {}, null, 2), "utf8");
 }
 
-/* ------------------------------------------------------------------
-   CONFIG ENDPOINTS  (used by Widget, WidgetAdmin, WidgetSurvey)
------------------------------------------------------------------- */
+/* ---------- default shapes ---------- */
 
-// ----- FORMS -----
+const defaultForm = {
+  headline: "Practice TOEFL Speaking Test",
+  recordButton: "Record your response",
+  previousButton: "Previous",
+  nextButton: "Next",
+  uploadButton: "Choose an audio file",
+  stopButton: "Stop",
+  poweredByLabel: "Powered by MSS Vox",
+  NotRecordingLabel: "Not recording",
+  SubmitForScoringButton: "Submit for scoring",
+  survey: [],
+};
+
+const defaultConfig = {
+  editable: {
+    headline: true,
+    recordButton: true,
+    previousButton: true,
+    nextButton: true,
+    poweredByLabel: true,
+    uploadButton: true,
+    stopButton: true,
+    NotRecordingLabel: true,
+    SubmitForScoringButton: true,
+  },
+  theme: "apple",
+  api: {
+    enabled: true,
+    baseUrl: "",
+    key: "",
+    secret: "",
+  },
+  logger: {
+    enabled: false,
+    url: "",
+  },
+  audioMinSeconds: 30,
+  audioMaxSeconds: 61,
+};
+
+const defaultImages = {
+  logoDataUrl: "",
+};
+
+/* ---------- ADMIN KEY (optional) ---------- */
+// You can add this to Render env later, e.g. ADMIN_WRITE_KEY=mysecret
+const ADMIN_WRITE_KEY = process.env.ADMIN_WRITE_KEY || "";
+
+// simple guard
+function checkAdminKey(req, res) {
+  if (!ADMIN_WRITE_KEY) return true; // no key set → allow all (dev mode)
+  const header = req.header("X-ADMIN-KEY");
+  if (header && header === ADMIN_WRITE_KEY) return true;
+  res.status(401).json({ ok: false, error: "admin unauthorized" });
+  return false;
+}
+
+/* ---------- CONFIG ROUTES ---------- */
+
+// FORMS (form.json)
 app.get("/config/forms", async (req, res) => {
-  const fallback = {
-    headline: "Practice TOEFL Speaking Test",
-    recordButton: "Record your response",
-    previousButton: "Previous",
-    nextButton: "Next",
-    uploadButton: "Choose an audio file",
-    stopButton: "Stop",
-    poweredByLabel: "Powered by MSS Vox",
-    NotRecordingLabel: "Not recording",
-    SubmitForScoringButton: "Submit for scoring",
-    survey: [],
-  };
-  const data = await readJsonSafe(FORM_FILE, fallback);
-  res.json(data);
+  try {
+    const data = await readJson("form.json", defaultForm);
+    res.json(data);
+  } catch (e) {
+    console.error("GET /config/forms error:", e);
+    res.status(500).json({ error: "failed to read forms" });
+  }
 });
 
 app.put("/config/forms", async (req, res) => {
-  const body = req.body && typeof req.body === "object" ? req.body : {};
-  await writeJsonSafe(FORM_FILE, body);
-  res.json({ ok: true });
+  if (!checkAdminKey(req, res)) return;
+  try {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    await writeJson("form.json", body);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("PUT /config/forms error:", e);
+    res.status(500).json({ ok: false, error: "failed to write forms" });
+  }
 });
 
-// ----- WIDGET CONFIG -----
+// WIDGET CONFIG (config.json)
 app.get("/config/widget", async (req, res) => {
-  const fallback = {
-    editable: {
-      headline: true,
-      recordButton: true,
-      previousButton: true,
-      nextButton: true,
-      poweredByLabel: true,
-      uploadButton: true,
-      stopButton: true,
-      NotRecordingLabel: true,
-      SubmitForScoringButton: true,
-    },
-    theme: "apple",
-    api: {
-      enabled: true,
-      baseUrl: "https://app.myspeakingscore.com",
-      key: "",
-      secret: "",
-    },
-    logger: {
-      enabled: false,
-      url: "",
-    },
-    audioMinSeconds: 30,
-    audioMaxSeconds: 61,
-  };
-  const data = await readJsonSafe(WIDGET_FILE, fallback);
-  res.json(data);
+  try {
+    const data = await readJson("config.json", defaultConfig);
+    res.json(data);
+  } catch (e) {
+    console.error("GET /config/widget error:", e);
+    res.status(500).json({ error: "failed to read widget config" });
+  }
 });
 
 app.put("/config/widget", async (req, res) => {
-  const body = req.body && typeof req.body === "object" ? req.body : {};
-  await writeJsonSafe(WIDGET_FILE, body);
-  res.json({ ok: true });
+  if (!checkAdminKey(req, res)) return;
+  try {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    await writeJson("config.json", body);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("PUT /config/widget error:", e);
+    res.status(500).json({ ok: false, error: "failed to write widget config" });
+  }
 });
 
-// ----- IMAGES -----
+// IMAGES (image.json)
 app.get("/config/images", async (req, res) => {
-  const fallback = { logoDataUrl: "" };
-  const data = await readJsonSafe(IMAGE_FILE, fallback);
-  res.json(data);
+  try {
+    const data = await readJson("image.json", defaultImages);
+    res.json(data);
+  } catch (e) {
+    console.error("GET /config/images error:", e);
+    res.status(500).json({ error: "failed to read images" });
+  }
 });
 
 app.put("/config/images", async (req, res) => {
-  const body = req.body && typeof req.body === "object" ? req.body : {};
-  await writeJsonSafe(IMAGE_FILE, body);
-  res.json({ ok: true });
-});
-
-/* ------------------------------------------------------------------
-   LOGGING + REPORTING (for Widget + Report.html)
------------------------------------------------------------------- */
-
-async function ensureCsvHeader() {
+  if (!checkAdminKey(req, res)) return;
   try {
-    await fsp.access(CSV_PATH, fs.constants.F_OK);
-  } catch {
-    await fsp.writeFile(
-      CSV_PATH,
-      "timestamp,toefl,ielts,cefr,fileName,lengthSec,question,extra\n",
-      "utf8"
-    );
-  }
-}
-
-async function readNotes() {
-  try {
-    const txt = await fsp.readFile(NOTES_PATH, "utf8");
-    return JSON.parse(txt);
-  } catch {
-    return {};
-  }
-}
-
-async function writeNotes(obj) {
-  await fsp.writeFile(NOTES_PATH, JSON.stringify(obj, null, 2), "utf8");
-}
-
-function parseCsvToObjects(csv) {
-  const lines = csv.trim().split("\n");
-  if (lines.length <= 1) return [];
-  const header = lines[0].split(",").map((s) => s.trim());
-
-  return lines.slice(1).map((line) => {
-    const cells = line.split(",");
-    const obj = {};
-    header.forEach((h, i) => (obj[h] = (cells[i] ?? "").trim()));
-    obj.id = `${obj.timestamp}|${obj.fileName}`;
-    return obj;
-  });
-}
-
-// POST /log/submission  (called by Widget after MSS returns JSON)
-app.post("/log/submission", async (req, res) => {
-  try {
-    await ensureCsvHeader();
-
-    const {
-      timestamp = new Date().toISOString(),
-      toefl = "",
-      ielts = "",
-      cefr = "",
-      fileName = "",
-      lengthSec = "",
-      question = "",
-      extra = "",
-    } = req.body || {};
-
-    const safeQuestion = String(question).replace(/"/g, "'");
-    const safeExtra = String(extra).replace(/"/g, "'");
-
-    const line =
-      `${timestamp},${toefl},${ielts},` +
-      `${cefr},"${fileName}",${lengthSec},"${safeQuestion}","${safeExtra}"\n`;
-
-    await fsp.appendFile(CSV_PATH, line, "utf8");
-    res.json({ ok: true, file: CSV_PATH });
-  } catch (e) {
-    console.error("❌ Logger error:", e);
-    res.status(500).json({ ok: false, error: String(e) });
-  }
-});
-
-// GET /log/download → raw CSV
-app.get("/log/download", async (req, res) => {
-  try {
-    await ensureCsvHeader();
-    res.download(CSV_PATH, "logger.csv");
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e) });
-  }
-});
-
-// GET /log/list?limit=200 → parsed rows + attached notes
-app.get("/log/list", async (req, res) => {
-  const limit = Math.max(1, Math.min(2000, Number(req.query.limit || 200)));
-  try {
-    await ensureCsvHeader();
-    const csv = await fsp.readFile(CSV_PATH, "utf8");
-    const lines = csv.trimEnd().split("\n");
-    const head = lines[0];
-    const body = lines.slice(1);
-    const tail = body.slice(Math.max(0, body.length - limit));
-    const parsed = parseCsvToObjects([head, ...tail].join("\n"));
-
-    const notes = await readNotes();
-    const merged = parsed.map((r) => ({
-      ...r,
-      note: notes[r.id]?.note || "",
-      teacher: notes[r.id]?.teacher || "",
-    }));
-
-    res.json({ ok: true, rows: merged });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e) });
-  }
-});
-
-// POST /log/note { id, note, teacher }
-app.post("/log/note", async (req, res) => {
-  try {
-    const { id, note = "", teacher = "" } = req.body || {};
-    if (!id) {
-      return res.status(400).json({ ok: false, error: "id required" });
-    }
-    const notes = await readNotes();
-    notes[id] = { note, teacher, updatedAt: new Date().toISOString() };
-    await writeNotes(notes);
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    await writeJson("image.json", body);
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ ok: false, error: String(e) });
+    console.error("PUT /config/images error:", e);
+    res.status(500).json({ ok: false, error: "failed to write images" });
   }
 });
 
-/* ------------------------------------------------------------------
-   Health check
------------------------------------------------------------------- */
-app.get("/healthz", (req, res) => res.send("ok"));
+/* ---------- LOGGING ENDPOINT ---------- */
 
-/* ------------------------------------------------------------------
-   Start server
------------------------------------------------------------------- */
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(
-    `✅ MSS Widget service running on port ${port} at ${new Date().toISOString()}`
-  );
+function csvEscape(v) {
+  if (v == null) return "";
+  const s = String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+app.post("/log/submission", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const headers = [
+      "timestamp",
+      "ip",
+      "userId",
+      "fileName",
+      "lengthSec",
+      "submitTime",
+      "toefl",
+      "ielts",
+      "pte",
+      "cefr",
+      "question",
+      "transcript",
+      "wpm",
+    ];
+
+    const rowValues = headers.map((h) => body[h] ?? "");
+    const line = rowValues.map(csvEscape).join(",") + "\n";
+
+    let prefix = "";
+    try {
+      await fs.access(LOG_CSV);
+    } catch {
+      // file doesn’t exist → write header first
+      prefix = headers.join(",") + "\n";
+    }
+
+    await fs.appendFile(LOG_CSV, prefix + line, "utf8");
+
+    res.json({ ok: true, file: LOG_CSV });
+  } catch (e) {
+    console.error("POST /log/submission error:", e);
+    res.status(500).json({ ok: false, error: "log failed" });
+  }
+});
+
+/* ---------- simple root ---------- */
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
+
+/* ---------- start server ---------- */
+
+app.listen(PORT, () => {
+  console.log(`✅ MSS Widget service listening on port ${PORT}`);
 });
