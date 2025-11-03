@@ -5,132 +5,186 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MSS Widget – Admin</title>
 <style>
-  :root {
-    --edge:#e5e7eb; --muted:#6b7280; --blue:#1a5cff; --card:#fff; --bg:#f6f7fb;
-  }
-  html,body { margin:0; background:var(--bg); font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:#111827 }
-  .top{position:sticky;top:0;z-index:40;background:transparent;}
-  .top .inner{max-width:1200px;margin:8px auto;padding:0 12px;}
-  .topCard{background:#fff;border:1px solid var(--edge);border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.06);}
-  .topRow{padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  :root{ --edge:#e5e7eb; --muted:#6b7280; --blue:#1a5cff; --card:#fff; --bg:#f6f7fb; }
+  html,body{margin:0;background:var(--bg);font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827}
+
+  /* Top header */
+  .top{position:sticky; top:0; z-index:40; background:transparent;}
+  .top .inner{max-width:1200px; margin:8px auto; padding:0 12px;}
+  .topCard{background:#fff; border:1px solid var(--edge); border-radius:16px; box-shadow:0 10px 24px rgba(0,0,0,.06);}
+  .topRow{padding:8px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
   .title{font-weight:800}
-  .toolbar{margin-left:auto;display:flex;gap:10px;align-items:center}
-  .btn{border-radius:999px;border:1px solid var(--edge);background:#fff;padding:10px 14px;font-weight:700;cursor:pointer}
-  .btn.primary{background:var(--blue);color:#fff;border-color:transparent}
-  .btn.small{padding:8px 10px;border-radius:10px}
-  .wrap{max-width:1200px;margin:6px auto 18px auto;padding:0 12px;display:grid;grid-template-columns:1fr 560px;gap:16px;align-items:start}
-  @media (max-width:1020px){.wrap{grid-template-columns:1fr;}}
-  .card{background:var(--card);border:1px solid var(--edge);border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.05);overflow:hidden}
+  .toolbar{margin-left:auto; display:flex; gap:10px; align-items:center}
+  .btn{border-radius:999px; border:1px solid var(--edge); background:#fff; padding:10px 14px; font-weight:700; cursor:pointer}
+  .btn.primary{background:var(--blue); color:#fff; border-color:transparent}
+  .btn.small{padding:8px 10px; border-radius:10px}
+
+  /* Layout */
+  .wrap{max-width:1200px; margin:6px auto 18px auto; padding:0 12px; display:grid; grid-template-columns:1fr 560px; gap:16px; align-items:start}
+  @media (max-width:1020px){ .wrap{ grid-template-columns:1fr; } }
+
+  .card{background:var(--card); border:1px solid var(--edge); border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.05); overflow:hidden}
   .sectionPad{padding:14px}
-  .muted{color:var(--muted);font-size:12px}
-  .label{font-size:12px;color:#374151}
-  input[type="text"],input[type="number"],input[type="url"],input[type="password"],select{
-    width:100%;border:1px solid var(--edge);border-radius:12px;padding:10px 12px;font:inherit;background:#fff
+  .muted{color:var(--muted); font-size:12px}
+  .label{font-size:12px; color:#374151}
+  input[type="text"], input[type="number"], input[type="url"], input[type="password"], select{
+    width:100%; border:1px solid var(--edge); border-radius:12px; padding:10px 12px; font:inherit; background:#fff
   }
-  .row{display:grid;gap:8px;margin-bottom:12px}
+  .row{display:grid; gap:8px; margin-bottom:12px}
+
+  /* Collapsible */
   details{border-top:1px solid var(--edge)}
   details:first-of-type{border-top:0}
-  summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:700;user-select:none}
+  summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:700; user-select:none}
   summary::-webkit-details-marker{display:none}
   .chev{transition:transform .2s ease}
   details[open] .chev{transform:rotate(90deg)}
   .secInner{padding:0 14px 14px 14px}
-  .logoWell{border:1px dashed #d1d5db;border-radius:14px;background:#f9fafb;padding:18px;display:grid;place-items:center;margin-bottom:10px}
-  .logoImg{width:220px;height:140px;object-fit:contain;border-radius:10px;background:#fff}
+
+  /* Branding */
+  .logoWell{border:1px dashed #d1d5db; border-radius:14px; background:#f9fafb; padding:18px; display:grid; place-items:center; margin-bottom:10px}
+  .logoImg{width:220px; height:140px; object-fit:contain; border-radius:10px; background:#fff}
+
+  /* Preview (mirrors Widget look) */
   .pvShell{padding:18px}
-  .preview{background:#fff;border:1px solid var(--edge);border-radius:16px;overflow:hidden}
-  .pvHead{padding:24px 18px 8px;display:grid;justify-items:center;background:linear-gradient(180deg,#fff,#f4f7ff)}
-  .pvLogo{width:180px;height:120px;object-fit:contain;border-radius:12px;background:#fff;border:1px dashed #d1d5db}
-  .pvBrand{margin-top:10px;font-weight:800;text-align:center}
-  .pvBody{padding:18px;background:#fff}
-  .pvCounter{color:var(--muted);font-size:12px;margin-bottom:6px;text-align:center}
-  .pvQ{font-size:16px;line-height:1.5;text-align:center}
-  .pvNav{display:flex;gap:12px;justify-content:center;margin-top:12px}
-  .pill{padding:10px 18px;border-radius:999px;border:1px solid var(--edge);background:#fff;cursor:pointer}
-  .pvToolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:14px}
-  .pvBtn{border-radius:999px;border:1px solid var(--edge);background:#fff;padding:10px 14px;font-weight:700;opacity:.55;cursor:not-allowed}
-  .pvRecbar{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
-  .pvDot{width:8px;height:8px;border-radius:999px;background:#ef4444;opacity:.35}
-  .pvMuted{color:var(--muted);font-size:12px;text-align:center}
-  .pvAudio{margin-top:8px;text-align:center}
-  .pvPowered{margin-top:12px;text-align:center;color:var(--muted);font-size:12px}
+  .preview{background:#fff; border:1px solid var(--edge); border-radius:16px; overflow:hidden}
+  .pvHead{padding:24px 18px 8px; display:grid; justify-items:center; background:linear-gradient(180deg,#fff,#f4f7ff)}
+  .pvLogo{width:180px; height:120px; object-fit:contain; border-radius:12px; background:#fff; border:1px dashed #d1d5db}
+  .pvBrand{margin-top:10px; font-weight:800; text-align:center}
+  .pvBody{padding:18px; background:#fff}
+  .pvCounter{color:var(--muted); font-size:12px; margin-bottom:6px; text-align:center}
+  .pvQ{font-size:16px; line-height:1.5; text-align:center}
+  .pvNav{display:flex; gap:12px; justify-content:center; margin-top:12px}
+  .pill{padding:10px 18px; border-radius:999px; border:1px solid var(--edge); background:#fff; cursor:pointer}
+  .pvToolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  .pvBtn{border-radius:999px; border:1px solid var(--edge); background:#fff; padding:10px 14px; font-weight:700; opacity:.55; cursor:not-allowed}
+  .pvRecbar{display:flex; gap:8px; align-items:center; justify-content:center; margin-top:8px}
+  .pvDot{width:8px; height:8px; border-radius:999px; background:#ef4444; opacity:.35}
+  .pvMuted{color:var(--muted); font-size:12px; text-align:center}
+  .pvAudio{margin-top:8px; text-align:center}
+  .pvPowered{margin-top:12px; text-align:center; color:var(--muted); font-size:12px}
+
+  /* Save modal */
+  .overlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); z-index:2100}
+  .modal{width:min(520px,94vw); background:#fff; border:1px solid var(--edge); border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.18); padding:18px}
+  .modal h3{margin:0 0 8px 0; font-size:16px}
+  .modal p{margin:0 0 14px 0; color:#374151; font-size:14px}
+  .modalBtns{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 </style>
 </head>
 <body>
 
+<!-- Top header card -->
 <div class="top">
   <div class="inner">
     <div class="topCard">
       <div class="topRow">
         <div class="title">Widget Admin</div>
         <div class="toolbar">
-          <button id="saveAllTop" class="btn">Save…</button>
-          <button id="openWidget" class="btn">Open Widget</button>
-          <button id="openSurvey" class="btn">Open Widget Survey</button>
+          <button id="saveAllTop" type="button" class="btn">Save…</button>
+          <button id="openWidget" type="button" class="btn">Open Widget</button>
+          <button id="openSurvey" type="button" class="btn">Open Widget Survey</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Main -->
 <div class="wrap">
+  <!-- LEFT: Editor -->
   <div class="card">
+    <!-- Collapsible: Widget Labels -->
     <details open>
       <summary><span class="chev">▸</span> Widget Labels</summary>
-      <div class="secInner"><div id="labelsSect" class="sectionPad"></div></div>
+      <div class="secInner">
+        <div id="labelsSect" class="sectionPad"></div>
+      </div>
     </details>
 
+    <!-- Collapsible: Theme -->
     <details>
       <summary><span class="chev">▸</span> Theme</summary>
-      <div class="secInner sectionPad">
-        <div class="row">
-          <div class="label">Theme</div>
-          <select id="cfgTheme"><option value="apple">Apple</option><option value="default">Default</option></select>
-          <div class="muted">“Apple” is our default style.</div>
+      <div class="secInner">
+        <div class="sectionPad">
+          <div class="row">
+            <div class="label">Theme</div>
+            <select id="cfgTheme">
+              <option value="apple">Apple</option>
+              <option value="default">Default</option>
+            </select>
+            <div class="muted">“Apple” is our default style.</div>
+          </div>
         </div>
       </div>
     </details>
 
+    <!-- Collapsible: Branding -->
     <details>
       <summary><span class="chev">▸</span> Branding</summary>
-      <div class="secInner sectionPad">
-        <div class="logoWell"><img id="logoImg" class="logoImg" alt="Brand logo"></div>
+      <div class="secInner">
+        <div class="sectionPad">
+          <div class="logoWell"><img id="logoImg" class="logoImg" alt="Brand logo"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <label class="btn small" style="display:inline-flex;align-items:center;gap:8px;">
+              <input id="fileLogo" type="file" accept="image/*" style="display:none"> Upload logo…
+            </label>
+            <button id="clearLogo" type="button" class="btn small">Clear</button>
+            <span class="muted">Stored in <code>image.json</code>.</span>
+          </div>
+        </div>
       </div>
     </details>
 
+    <!-- Collapsible: API, Logging & Audio -->
     <details>
       <summary><span class="chev">▸</span> API, Logging & Audio</summary>
-      <div class="secInner sectionPad">
-        <div class="row">
-          <div class="label">API Base URL</div><input id="cfgApiBase" type="url" placeholder="https://app.myspeakingscore.com">
-        </div>
-        <div class="row">
-          <div class="label">API Key</div><input id="cfgApiKey" type="text" placeholder="Paste your MSS API key">
-        </div>
-        <div class="row">
-          <div class="label">API Secret</div><input id="cfgApiSecret" type="password" placeholder="Paste your X-API-SECRET">
-        </div>
-        <div class="row">
-          <label><input id="cfgLogEnabled" type="checkbox"> Enable Logging</label>
-        </div>
-        <div class="row">
-          <div class="label">Logger URL</div>
-          <input id="cfgLogUrl" type="url" placeholder="https://msswidget-dev.onrender.com/log/submission">
-        </div>
-        <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div><div class="label">Audio Min Seconds</div><input id="cfgMinS" type="number" min="1" step="1" placeholder="30"></div>
-          <div><div class="label">Audio Max Seconds</div><input id="cfgMaxS" type="number" min="1" step="1" placeholder="61"></div>
+      <div class="secInner">
+        <div class="sectionPad">
+          <div class="row">
+            <div class="label">API Base URL</div>
+            <input id="cfgApiBase" type="url" placeholder="https://app.myspeakingscore.com">
+          </div>
+          <div class="row">
+            <div class="label">API Key</div>
+            <input id="cfgApiKey" type="text" placeholder="Paste your MSS API key">
+          </div>
+          <div class="row">
+            <div class="label">API Secret</div>
+            <input id="cfgApiSecret" type="password" placeholder="Paste your X-API-SECRET">
+          </div>
+          <div class="row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <input id="cfgLogEnabled" type="checkbox"> Enable Logging
+            </label>
+          </div>
+          <div class="row">
+            <div class="label">Logger URL</div>
+            <input id="cfgLogUrl" type="url" placeholder="https://msswidget-dev.onrender.com/log/submission">
+          </div>
+          <div class="row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <div class="label">Audio Min Seconds</div>
+              <input id="cfgMinS" type="number" min="1" step="1" placeholder="30">
+            </div>
+            <div>
+              <div class="label">Audio Max Seconds</div>
+              <input id="cfgMaxS" type="number" min="1" step="1" placeholder="61">
+            </div>
+          </div>
         </div>
       </div>
     </details>
 
+    <!-- Footer controls -->
     <div class="sectionPad" style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="saveAllBottom" class="btn">Save…</button>
+      <button id="saveAllBottom" type="button" class="btn">Save…</button>
     </div>
   </div>
 
+  <!-- RIGHT: Preview -->
   <div class="card pvShell">
-    <h3 style="margin:0 0 8px 0;font-size:14px;padding:0 4px">Widget Preview</h3>
+    <h3 style="margin:0 0 8px 0; font-size:14px; padding:0 4px">Widget Preview</h3>
     <div class="preview">
       <div class="pvHead">
         <img id="pvLogo" class="pvLogo" alt="Logo preview">
@@ -139,42 +193,268 @@
       <div class="pvBody">
         <div id="pvCounter" class="pvCounter"></div>
         <div id="pvQ" class="pvQ"></div>
-        <div class="pvNav"><button id="pvPrev" class="pill">Previous</button><button id="pvNext" class="pill">Next</button></div>
-        <div class="pvToolbar"><button class="pvBtn" disabled>Record your response</button><button class="pvBtn" disabled>Stop</button><button class="pvBtn" disabled>Choose an audio file</button><button class="pvBtn" disabled>Submit for scoring</button></div>
-        <div class="pvRecbar"><span class="pvDot"></span><span id="pvRecState" class="pvMuted">Not recording</span></div>
-        <div class="pvAudio"><div id="pvLength" class="pvMuted"></div></div>
+
+        <!-- Nav -->
+        <div class="pvNav">
+          <button id="pvPrev" type="button" class="pill">Previous</button>
+          <button id="pvNext" type="button" class="pill">Next</button>
+        </div>
+
+        <!-- Toolbar (disabled look) -->
+        <div class="pvToolbar">
+          <button type="button" class="pvBtn" disabled>Record your response</button>
+          <button type="button" class="pvBtn" disabled>Stop</button>
+          <button type="button" class="pvBtn" disabled>Choose an audio file</button>
+          <button type="button" class="pvBtn" disabled>Submit for scoring</button>
+        </div>
+
+        <div class="pvRecbar">
+          <span class="pvDot"></span>
+          <span id="pvRecState" class="pvMuted">Not recording</span>
+          <span id="pvTimer" class="pvMuted"></span>
+        </div>
+
+        <div class="pvAudio">
+          <div id="pvLength" class="pvMuted"></div>
+        </div>
+
         <div id="pvPowered" class="pvPowered">Powered by MSS Vox</div>
       </div>
+    </div>
+    <div class="muted" style="margin-top:10px">Questions are managed in <code>WidgetSurvey.html</code>.</div>
+  </div>
+</div>
+
+<!-- Save dialog -->
+<div id="saveOverlay" class="overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+    <h3 id="saveTitle">Files Updated ✅</h3>
+    <p>Your widget configuration has been saved successfully.</p>
+    <div class="modalBtns">
+      <button id="saveClose" type="button" class="btn primary">Continue Editing</button>
+      <button id="saveOpenWidget" type="button" class="btn">Open Widget</button>
+      <button id="saveOpenSurvey" type="button" class="btn">Open Widget Survey</button>
+      <button id="saveCloseAdmin" type="button" class="btn">Close Admin</button>
     </div>
   </div>
 </div>
 
 <script>
+/* ========= service base (Render-first) ========= */
 const SERVICE_BASE = 'https://msswidget-dev.onrender.com';
-let FORM=null, CONFIG=null, IMAGE=null, idx=0;
-const $=id=>document.getElementById(id);
 
+/* ========= state ========= */
+let FORM=null, CONFIG=null, IMAGE=null;
+let idx=0;
+let _fhForm=null,_fhConfig=null,_fhImage=null; // file handles for File System Access
+
+/* ========= tiny utils ========= */
+const $=(id)=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function getLogo(obj){ if(!obj) return ''; for (const k of ['logoDataUrl','dataUrl','logo','src','url','path']) if (obj[k]) return String(obj[k]); return ''; }
+function fileToDataUrl(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(f); }); }
+
+/* ========= load (Render first, local fallback) ========= */
 async function loadAll(){
   const [f,c,i] = await Promise.allSettled([
-    fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`,{cache:'no-store'}),
-    fetch(`${SERVICE_BASE}/config/widget?ts=${Date.now()}`,{cache:'no-store'}),
-    fetch(`${SERVICE_BASE}/config/images?ts=${Date.now()}`,{cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`, {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/widget?ts=${Date.now()}`, {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/images?ts=${Date.now()}`, {cache:'no-store'}),
   ]);
 
-  FORM = f.status==='fulfilled'?await f.value.json():{};
-  CONFIG = c.status==='fulfilled'?await c.value.json():{};
-  IMAGE = i.status==='fulfilled'?await i.value.json():{};
+  try {
+    FORM = f.status==='fulfilled' && f.value.ok ? await f.value.json() : (await (await fetch('form.json?ts='+Date.now(),{cache:'no-store'})).json());
+  } catch { FORM = { headline:'Practice TOEFL Speaking Test', survey:[] }; }
 
-  buildLabels(); bindTheme(); bindBranding(); bindApiLoggingAudio(); renderPreview();
+  try {
+    CONFIG = c.status==='fulfilled' && c.value.ok ? await c.value.json() : (await (await fetch('config.json?ts='+Date.now(),{cache:'no-store'})).json());
+  } catch {
+    CONFIG = {
+      editable:{ headline:true, recordButton:true, previousButton:true, nextButton:true, poweredByLabel:true, uploadButton:true, stopButton:true, NotRecordingLabel:true, SubmitForScoringButton:true },
+      theme:'apple',
+      api:{ enabled:true, baseUrl:'', key:'', secret:'' },
+      logger:{ enabled:false, url:'' },
+      audioMinSeconds:30, audioMaxSeconds:61
+    };
+  }
+
+  try {
+    IMAGE = i.status==='fulfilled' && i.value.ok ? await i.value.json() : (await (await fetch('image.json?ts='+Date.now(),{cache:'no-store'})).json());
+  } catch { IMAGE = { logoDataUrl:'' }; }
+
+  buildLabels();
+  bindTheme();
+  bindBranding();
+  bindApiLoggingAudio();
+  renderPreview();
 }
 
-function buildLabels(){const root=$('labelsSect');root.innerHTML='';const defs=[['headline','Headline','Type headline…'],['recordButton','Record Button','Record your response'],['stopButton','Stop Button','Stop'],['uploadButton','Upload Button','Choose an audio file'],['SubmitForScoringButton','Submit Button','Submit for scoring'],['previousButton','Previous Button','Previous'],['nextButton','Next Button','Next'],['poweredByLabel','Powered By Label','Powered by MSS Vox'],['NotRecordingLabel','Not Recording Label','Not recording']];defs.forEach(([k,l,ph])=>{const row=document.createElement('div');row.className='row';row.innerHTML=`<div class="label">${l}</div><input id="f_${k}" type="text" placeholder="${ph}">`;root.appendChild(row);const input=$('f_'+k);input.value=FORM[k]||'';input.addEventListener('input',e=>{FORM[k]=e.target.value;renderPreview();});});}
+/* ========= labels section (respect CONFIG.editable) ========= */
+function buildLabels(){
+  const root = $('labelsSect'); root.innerHTML='';
+  const defs = [
+    ['headline','Headline','Type headline…'],
+    ['recordButton','Record Button','Record your response'],
+    ['stopButton','Stop Button','Stop'],
+    ['uploadButton','Upload Button','Choose an audio file'],
+    ['SubmitForScoringButton','Submit Button','Submit for scoring'],
+    ['previousButton','Previous Button','Previous'],
+    ['nextButton','Next Button','Next'],
+    ['poweredByLabel','Powered By Label','Powered by MSS Vox'],
+    ['NotRecordingLabel','Not Recording Label','Not recording'],
+  ];
 
-function bindTheme(){const sel=$('cfgTheme');sel.value=(CONFIG.theme||'apple').toLowerCase();sel.addEventListener('change',e=>{CONFIG.theme=e.target.value;});}
-function bindBranding(){$('logoImg').src=IMAGE.logoDataUrl||'';$('pvLogo').src=IMAGE.logoDataUrl||'';}
-function bindApiLoggingAudio(){$('cfgApiBase').value=CONFIG.api?.baseUrl||'';$('cfgApiKey').value=CONFIG.api?.key||'';$('cfgApiSecret').value=CONFIG.api?.secret||'';$('cfgLogEnabled').checked=!!CONFIG.logger?.enabled;$('cfgLogUrl').value=CONFIG.logger?.url||'';$('cfgMinS').value=CONFIG.audioMinSeconds??30;$('cfgMaxS').value=CONFIG.audioMaxSeconds??61;}
-function renderPreview(){$('pvBrand').textContent=FORM.headline||'';$('pvLogo').src=IMAGE.logoDataUrl||'';const s=Array.isArray(FORM.survey)?FORM.survey:[];$('pvCounter').textContent=s.length?`Question ${idx+1} of ${s.length}`:'';$('pvQ').textContent=s[idx]||'';$('pvPrev').textContent=FORM.previousButton||'Previous';$('pvNext').textContent=FORM.nextButton||'Next';$('pvPowered').textContent=FORM.poweredByLabel||'Powered by MSS Vox';}
-window.addEventListener('DOMContentLoaded',loadAll);
+  defs.forEach(([key,label,ph])=>{
+    const editable = CONFIG?.editable;
+    if (editable && key in editable && editable[key] === false) return; // hidden if explicitly false
+    const row = document.createElement('div'); row.className='row';
+    row.innerHTML = `<div class="label">${label}</div><input id="f_${key}" type="text" placeholder="${esc(ph)}">`;
+    root.appendChild(row);
+    const input = $('f_'+key);
+    input.value = FORM[key] ?? '';
+    input.addEventListener('input', e=>{ FORM[key]=e.target.value; renderPreview(); });
+  });
+}
+
+/* ========= theme ========= */
+function bindTheme(){
+  const sel = $('cfgTheme');
+  sel.value = (CONFIG.theme||'apple').toLowerCase();
+  sel.addEventListener('change', e=>{ CONFIG.theme = e.target.value; /* theme file swap happens in Widget.html */ });
+}
+
+/* ========= branding (logo upload / clear) ========= */
+function bindBranding(){
+  const url = getLogo(IMAGE);
+  $('logoImg').src = url || '';
+  $('pvLogo').src  = url || '';
+
+  $('fileLogo').addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0]; e.target.value='';
+    if (!f) return;
+    const b64 = await fileToDataUrl(f);
+    IMAGE.logoDataUrl = b64;
+    $('logoImg').src = b64; $('pvLogo').src = b64;
+  });
+  $('clearLogo').addEventListener('click', ()=>{
+    IMAGE.logoDataUrl=''; $('logoImg').src=''; $('pvLogo').src='';
+  });
+}
+
+/* ========= API, Logging & Audio ========= */
+function bindApiLoggingAudio(){
+  $('cfgApiBase').value = CONFIG.api?.baseUrl || '';
+  $('cfgApiBase').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.baseUrl = e.target.value; });
+
+  $('cfgApiKey').value = CONFIG.api?.key || '';
+  $('cfgApiKey').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.key = e.target.value; });
+
+  $('cfgApiSecret').value = CONFIG.api?.secret || '';
+  $('cfgApiSecret').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.secret = e.target.value; });
+
+  $('cfgLogEnabled').checked = !!CONFIG.logger?.enabled;
+  $('cfgLogEnabled').addEventListener('change', e=>{ CONFIG.logger ||= {}; CONFIG.logger.enabled = e.target.checked; });
+
+  $('cfgLogUrl').value = CONFIG.logger?.url || '';
+  $('cfgLogUrl').addEventListener('input', e=>{ CONFIG.logger ||= {}; CONFIG.logger.url = e.target.value; });
+
+  $('cfgMinS').value = Number(CONFIG.audioMinSeconds ?? 30);
+  $('cfgMinS').addEventListener('input', e=>{
+    CONFIG.audioMinSeconds = Math.max(1, Number(e.target.value||30)); renderPreview();
+  });
+  $('cfgMaxS').value = Number(CONFIG.audioMaxSeconds ?? 61);
+  $('cfgMaxS').addEventListener('input', e=>{
+    CONFIG.audioMaxSeconds = Math.max(1, Number(e.target.value||61)); renderPreview();
+  });
+}
+
+/* ========= preview ========= */
+function renderPreview(){
+  $('pvBrand').textContent = FORM.headline || '';
+  $('pvLogo').src = getLogo(IMAGE) || '';
+
+  const s = Array.isArray(FORM.survey)?FORM.survey:[];
+  if (!s.length){
+    $('pvCounter').textContent = '';
+    $('pvQ').innerHTML = '<i>(No questions)</i>';
+  } else {
+    if (idx < 0) idx = 0;
+    if (idx > s.length-1) idx = s.length-1;
+    $('pvCounter').textContent = `Question ${idx+1} of ${s.length}`;
+    $('pvQ').innerHTML = esc(s[idx]).replace(/\n+/g,'<br>');
+  }
+
+  $('pvPrev').textContent = FORM.previousButton || 'Previous';
+  $('pvNext').textContent = FORM.nextButton || 'Next';
+
+  const showPowered = (CONFIG.editable?.poweredByLabel !== false);
+  $('pvPowered').style.display = showPowered ? '' : 'none';
+  if (showPowered) $('pvPowered').textContent = FORM.poweredByLabel || 'Powered by MSS Vox';
+
+  const minS = Number(CONFIG.audioMinSeconds ?? 30);
+  const maxS = Number(CONFIG.audioMaxSeconds ?? 61);
+  const mins = String(Math.floor(minS/60)).padStart(2,'0');
+  const secs = String(minS%60).padStart(2,'0');
+  const maxm = String(Math.floor(maxS/60)).padStart(2,'0');
+  const maxs = String(maxS%60).padStart(2,'0');
+  $('pvLength').textContent = `Allowed length: ${mins}:${secs}–${maxm}:${maxs}`;
+}
+
+/* ========= preview nav ========= */
+$('pvPrev')?.addEventListener('click', ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx-1+s.length)%s.length; renderPreview(); });
+$('pvNext')?.addEventListener('click', ()=>{ const s=Array.isArray(FORM.survey)?FORM.survey:[]; if(!s.length) return; idx=(idx+1)%s.length; renderPreview(); });
+
+/* ========= saving (3 files, with File System Access API + fallback) ========= */
+async function saveJson(obj, name, slot){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+  if (window.showSaveFilePicker){
+    try{
+      let handle = (slot==='form')?_fhForm:(slot==='config')?_fhConfig:_fhImage;
+      if (handle){
+        const perm = await handle.requestPermission({mode:'readwrite'});
+        if (perm==='granted'){ const w=await handle.createWritable(); await w.write(blob); await w.close(); return 'saved'; }
+      }
+      handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:'JSON', accept:{'application/json':['.json']}}]});
+      const w=await handle.createWritable(); await w.write(blob); await w.close();
+      if (slot==='form') _fhForm=handle; if (slot==='config') _fhConfig=handle; if (slot==='image') _fhImage=handle;
+      return 'saved';
+    }catch(e){ console.warn('Save canceled/failed', e); }
+  }
+  // download fallback
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.setAttribute('download',name);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  return 'download';
+}
+async function saveAllDirty(){
+  const r1 = await saveJson(FORM,'form.json','form');
+  const r2 = await saveJson(CONFIG,'config.json','config');
+  const r3 = await saveJson(IMAGE,'image.json','image');
+  return [r1,r2,r3];
+}
+
+/* ========= save modal ========= */
+function showSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('saveClose')?.focus(),0);
+}
+function closeSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='none'; ov.setAttribute('aria-hidden','true');
+}
+
+/* ========= top/bottom toolbar buttons ========= */
+$('saveAllTop')?.addEventListener('click', async ()=>{ await saveAllDirty(); showSaveDialog(); });
+$('saveAllBottom')?.addEventListener('click', async ()=>{ await saveAllDirty(); showSaveDialog(); });
+$('openWidget')?.addEventListener('click', ()=> window.open('Widget.html','_blank','noopener'));
+$('openSurvey')?.addEventListener('click', ()=> window.open('WidgetSurvey.html','_blank','noopener'));
+
+/* ========= save modal buttons ========= */
+$('saveClose')?.addEventListener('click', closeSaveDialog);
+$('saveOpenWidget')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('Widget.html','_blank','noopener'); });
+$('saveOpenSurvey')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('WidgetSurvey.html','_blank','noopener'); });
+$('saveCloseAdmin')?.addEventListener('click', ()=>{ try{ window.close(); }catch{} });
+
+/* ========= boot ========= */
+window.addEventListener('DOMContentLoaded', loadAll);
 </script>
 </body>
 </html>
