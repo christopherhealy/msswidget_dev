@@ -174,6 +174,9 @@
   </div>
 
 <script>
+  // ========= CHANGES: centralize service base & remote loader =========
+  const SERVICE_BASE = 'https://msswidget-dev.onrender.com'; // Render service root
+
   // -------- State --------
   let schema = null;
   let survey = [];
@@ -256,26 +259,10 @@
         </div>
       </div>
     `).join('');
-
-    // Button actions
-    list.querySelectorAll('.row .btn').forEach(btn => {
-      btn.addEventListener('click', (e)=> {
-        const row = e.target.closest('.row');
-        const idx = Number(row.getAttribute('data-idx'));
-        const act = e.target.getAttribute('data-act');
-        if (act === 'edit') openEditModal(idx);
-        else if (act === 'up') move(idx,-1);
-        else if (act === 'down') move(idx, 1);
-        else if (act === 'top') moveTo(idx, 0);
-        else if (act === 'bottom') moveTo(idx, survey.length - 1);
-        else if (act === 'remove') confirmRemove(idx);
-      });
-    });
-
     wireDnd(list);
   }
 
-  // -------- Drag & drop (stable; must start on .idx handle) --------
+  // -------- Drag & drop --------
   function wireDnd(container){
     let placeholder = null;
     let draggingRow = null;
@@ -371,21 +358,19 @@
   function showOverlay(id, show){
     const el = document.getElementById(id);
     el.style.display = show ? 'flex' : 'none';
-    el.setAttribute('aria-hidden', show ? 'false' : 'true');
+    el.setAttribute('aria-hidden', show ? 'true' : 'false');
   }
 
   function wireAddEdit(){
     const ta = document.getElementById('aeTextarea');
     ta.addEventListener('input', ()=> aeDirty = true);
 
-    // Cancel = close without saving anything (no prompt)
     document.getElementById('aeCancel').addEventListener('click', ()=>{
       document.getElementById('aeTextarea').value = '';
       aeDirty = false;
       showOverlay('aeOverlay', false);
     });
 
-    // Save (does not close; good for minor edits)
     document.getElementById('aeSave').addEventListener('click', ()=>{
       const v = ta.value.trim();
       if (!v){ setStatus('Nothing to save', false); return; }
@@ -396,7 +381,6 @@
       setStatus('Saved');
     });
 
-    // Save & New (save then clear for the next entry)
     document.getElementById('aeSaveNew').addEventListener('click', ()=>{
       const v = ta.value.trim();
       if (!v){ setStatus('Nothing to save', false); return; }
@@ -408,7 +392,6 @@
       setStatus('Saved. Ready for next.');
     });
 
-    // Close (prompt if unsaved text)
     document.getElementById('aeClose').addEventListener('click', async ()=>{
       if (aeDirty && ta.value.trim()){
         const choice = await triConfirm('Save your question?', 'No', 'Cancel', 'Save');
@@ -423,8 +406,6 @@
         } else if (choice === 'nosave'){
           aeDirty = false;
           showOverlay('aeOverlay', false);
-        } else {
-          // cancel: stay open
         }
       } else {
         showOverlay('aeOverlay', false);
@@ -442,7 +423,6 @@
   }
 
   // -------- Import / Export --------
-  // Export (download as form.json)
   function exportJson(){
     const merged = getMerged();
     const a = document.createElement('a');
@@ -453,12 +433,11 @@
     setStatus('Exported');
   }
 
-  // Import JSON (load selected)
   function wireImportJson(){
     const f = document.getElementById('importJson');
     f.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0];
-      e.target.value = ''; // reset picker
+      e.target.value = '';
       if (!file) return;
       try{
         const text = await file.text();
@@ -476,12 +455,11 @@
     });
   }
 
-  // CSV Import (single column, header auto-detect “Name/Title”; prompt Append/Replace)
   function wireImportCsv(){
     const f = document.getElementById('importCsv');
     f.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0];
-      e.target.value = ''; // reset picker
+      e.target.value = '';
       if (!file) return;
       let text = await file.text();
       const rows = parseCSV(text);
@@ -501,9 +479,9 @@
       const choice = await triConfirm('Append to existing questions?', 'Replace', 'Cancel', 'Append');
       if (choice === 'cancel') return;
 
-      if (choice === 'save'){ // right button label = Append
+      if (choice === 'save'){ // Append
         survey = survey.concat(questions);
-      } else if (choice === 'nosave'){ // left button label = Replace
+      } else if (choice === 'nosave'){ // Replace
         survey = questions.slice();
       }
       render();
@@ -603,13 +581,10 @@
       await smartGoHome();
     } else if (choice === 'nosave'){
       await smartGoHome();
-    } else {
-      // cancel → stay here
     }
   }
 
   // -------- Tiny dialog helpers --------
-  // two-button confirm: returns true if OK
   function twoBtnConfirm(title, cancelLabel='Cancel', okLabel='OK'){
     return new Promise(resolve=>{
       const ov = document.getElementById('confirmOverlay');
@@ -624,7 +599,6 @@
       cancel.onclick = ()=> cleanup(false);
     });
   }
-  // tri confirm with custom labels; returns 'save' | 'nosave' | 'cancel'
   function triConfirm(title, leftLabel='No', middleLabel='Cancel', rightLabel='Yes'){
     return new Promise(resolve=>{
       const ov = document.getElementById('confirmOverlay');
@@ -633,7 +607,6 @@
       const ok = document.getElementById('confirmOk');
       const cancel = document.getElementById('confirmCancel');
 
-      // Build 3 buttons in place
       const wrap = ok.parentNode;
       wrap.innerHTML = '';
       const left = document.createElement('button');
@@ -651,16 +624,23 @@
         wrap.innerHTML=''; wrap.appendChild(cancel); wrap.appendChild(ok);
       };
 
-      left.onclick  = ()=>{ cleanup(); resolve('nosave'); };  // left → No
+      left.onclick  = ()=>{ cleanup(); resolve('nosave'); };
       mid.onclick   = ()=>{ cleanup(); resolve('cancel'); };
-      right.onclick = ()=>{ cleanup(); resolve('save'); };    // right → Yes
+      right.onclick = ()=>{ cleanup(); resolve('save'); };
     });
   }
 
-  // -------- Load initial form.json --------
+  // -------- Load initial form.json (REMOTE FIRST, local fallback) --------
   async function load(){
-    const res = await fetch('form.json?ts=' + Date.now(), { cache: 'no-store' });
-    schema = await res.json();
+    try{
+      const r = await fetch(`${SERVICE_BASE}/config/forms?ts=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) throw new Error('remote forms fetch failed: ' + r.status);
+      schema = await r.json();
+    }catch(err){
+      console.warn('[WidgetSurvey] remote load failed, falling back to local form.json', err);
+      const res = await fetch('form.json?ts=' + Date.now(), { cache: 'no-store' });
+      schema = await res.json();
+    }
     survey = Array.isArray(schema.survey) ? schema.survey.slice() : [];
     document.getElementById('meta').textContent =
       (schema.headline || 'My Speaking Score') + ' • ' + (new Date()).toLocaleString();
