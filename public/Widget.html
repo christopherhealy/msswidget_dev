@@ -98,6 +98,15 @@
    CONFIG
 ------------------------------------------------------------------ */
 const API_BASE = "https://msswidget-dev.onrender.com";  // Render service
+const SERVICE_BASE = window.location.hostname.includes('localhost')
+  ? 'http://localhost:3000'
+  : 'https://msswidget-dev.onrender.com';
+
+/* ------------------------------------------------------------------
+   ENVIRONMENT CHECK (just for debugging)
+------------------------------------------------------------------ */
+const mode = SERVICE_BASE.includes('localhost') ? 'LOCAL DEV' : 'RENDER PROD';
+console.log(`🧩 MSS Widget running in ${mode} mode`);
 
 /* ------------------------------------------------------------------
    STATE
