@@ -239,6 +239,102 @@
   </div>
 </div>
 
+
+/* ... keep everything above this line (SERVICE_BASE, state, loadAll, bindings, preview, etc.) ... */
+
+/* ========= save mode ========= */
+const SAVE_MODE = 'remote'; // 'remote' | 'local'
+
+function adminHeader() {
+  const key = CONFIG?.admin?.writeKey || '';
+  return key ? { 'X-ADMIN-KEY': key } : {};
+}
+
+/* ========= remote save (Render) ========= */
+async function putJson(url, obj){
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...adminHeader() },
+    body: JSON.stringify(obj ?? {}, null, 2),
+  });
+  if (!res.ok) throw new Error(`PUT ${url} → ${res.status}`);
+  return res.json().catch(()=> ({}));
+}
+
+async function saveAllRemote(){
+  // endpoints must exist on your Render service
+  const base = SERVICE_BASE.replace(/\/+$/,'');
+  await putJson(`${base}/config/forms`,  FORM);
+  await putJson(`${base}/config/widget`, CONFIG);
+  await putJson(`${base}/config/images`, IMAGE);
+  return 'remote-ok';
+}
+
+/* ========= local save (fallback) ========= */
+async function saveJsonLocal(obj, name, slot){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+  if (window.showSaveFilePicker){
+    try{
+      let handle = (slot==='form')?_fhForm:(slot==='config')?_fhConfig:_fhImage;
+      if (handle){
+        const perm = await handle.requestPermission({mode:'readwrite'});
+        if (perm==='granted'){ const w=await handle.createWritable(); await w.write(blob); await w.close(); return 'saved'; }
+      }
+      handle = await window.showSaveFilePicker({suggestedName:name, types:[{description:'JSON', accept:{'application/json':['.json']}}]});
+      const w=await handle.createWritable(); await w.write(blob); await w.close();
+      if (slot==='form') _fhForm=handle; if (slot==='config') _fhConfig=handle; if (slot==='image') _fhImage=handle;
+      return 'saved';
+    }catch(e){ /* canceled */ }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.setAttribute('download',name);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  return 'download';
+}
+async function saveAllLocal(){
+  await saveJsonLocal(FORM,'form.json','form');
+  await saveJsonLocal(CONFIG,'config.json','config');
+  await saveJsonLocal(IMAGE,'image.json','image');
+  return 'local-ok';
+}
+
+/* ========= unified Save… handlers ========= */
+async function handleSaveAll(){
+  try{
+    if (SAVE_MODE === 'remote'){
+      await saveAllRemote();
+    } else {
+      await saveAllLocal();
+    }
+    showSaveDialog();
+  }catch(err){
+    console.warn('Remote save failed, falling back to local:', err);
+    await saveAllLocal();
+    showSaveDialog();
+  }
+}
+
+/* ========= save modal ========= */
+function showSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('saveClose')?.focus(),0);
+}
+function closeSaveDialog(){
+  const ov = $('saveOverlay'); ov.style.display='none'; ov.setAttribute('aria-hidden','true');
+}
+
+/* ========= wire buttons ========= */
+$('saveAllTop')?.addEventListener('click', handleSaveAll);
+$('saveAllBottom')?.addEventListener('click', handleSaveAll);
+$('openWidget')?.addEventListener('click', ()=> window.open('Widget.html','_blank','noopener'));
+$('openSurvey')?.addEventListener('click', ()=> window.open('WidgetSurvey.html','_blank','noopener'));
+$('saveClose')?.addEventListener('click', closeSaveDialog);
+$('saveOpenWidget')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('Widget.html','_blank','noopener'); });
+$('saveOpenSurvey')?.addEventListener('click', ()=>{ closeSaveDialog(); window.open('WidgetSurvey.html','_blank','noopener'); });
+$('saveCloseAdmin')?.addEventListener('click', ()=>{ try{ window.close(); }catch{} });
+
+/* ... keep boot (DOMContentLoaded -> loadAll) ... */
+
+
 <script>
 /* ========= service base (Render-first) ========= */
 const SERVICE_BASE = 'https://msswidget-dev.onrender.com';
