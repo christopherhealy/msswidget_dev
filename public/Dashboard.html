@@ -1,618 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>MSS Score Results</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>MSS Score Results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root{
+    --bg:#f3f4f6;
+    --card:#ffffff;
+    --edge:#e5e7eb;
+    --muted:#6b7280;
+    --title:#111827;
+    --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#111827}
+  body{background:#111827}
 
-  <style>
-    :root{
-      --bg:#f3f4f6;
-      --card:#ffffff;
-      --edge:#e5e7eb;
-      --muted:#6b7280;
-      --text:#111827;
-      --blue:#2563eb;
-      --accent:#111827;
-    }
-    *{box-sizing:border-box;}
-    html,body{
-      margin:0;
-      padding:0;
-      font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
+  .shell{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(15,23,42,.80);
+    z-index:9999;
+  }
+  .frame{
+    width:min(1160px,100vw);
+    height:min(90vh,720px);
+    background:var(--bg);
+    border-radius:18px;
+    box-shadow:0 25px 60px rgba(0,0,0,.35);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
 
-    .shell{
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-    }
+  .head{
+    padding:10px 16px;
+    background:#f9fafb;
+    border-bottom:1px solid var(--edge);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .headTitle{font-weight:700;color:#111827}
+  .headSpacer{flex:1}
+  .pillBtn{
+    border-radius:999px;border:1px solid var(--edge);
+    background:#fff;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
 
-    /* Top bar */
-    .topbar{
-      background:#f9fafb;
-      border-bottom:1px solid var(--edge);
-      padding:10px 16px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .topbar-title{font-weight:700;font-size:14px;}
-    .topbar-btn{
-      border-radius:999px;
-      border:1px solid var(--edge);
-      background:#fff;
-      padding:7px 14px;
-      font-size:13px;
-      font-weight:600;
-      cursor:pointer;
-    }
+  .body{
+    flex:1;
+    padding:14px 16px 16px;
+    overflow:auto;
+  }
 
-    /* Main */
-    .main{
-      flex:1;
-      padding:18px;
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-    }
-    .frame{
-      width:1120px;
-      max-width:100%;
-      background:var(--card);
-      border-radius:18px;
-      border:1px solid var(--edge);
-      box-shadow:0 15px 40px rgba(15,23,42,.12);
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
+  .grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.05fr) minmax(0,1.1fr);
+    gap:14px;
+  }
+  @media (max-width:900px){
+    .frame{height:100vh;border-radius:0}
+    .grid{grid-template-columns:1fr}
+  }
 
-    .frame-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-    }
-    .fh-title{font-weight:800;font-size:15px;}
-    .fh-pill{
-      border-radius:999px;
-      border:1px solid var(--edge);
-      padding:6px 12px;
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      color:var(--muted);
-      background:#f9fafb;
-    }
+  .card{
+    background:var(--card);
+    border-radius:14px;
+    border:1px solid var(--edge);
+    box-shadow:0 8px 24px rgba(15,23,42,.08);
+  }
+  .cardHead{
+    padding:10px 14px 6px;
+    border-bottom:1px solid var(--edge);
+    font-size:14px;
+    font-weight:700;
+  }
+  .cardBody{padding:10px 14px 14px;font-size:13px;color:#111827}
 
-    /* Two-column content */
-    .cols{
-      display:grid;
-      grid-template-columns:1.05fr 1.1fr;
-      gap:16px;
-    }
-    @media (max-width:960px){
-      .cols{grid-template-columns:1fr;}
-    }
+  .metaRow{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;color:var(--muted);margin-bottom:6px;
+  }
 
-    .card{
-      background:var(--card);
-      border-radius:14px;
-      border:1px solid var(--edge);
-      padding:14px 14px 16px;
-    }
-    .card-title{
-      font-weight:700;
-      font-size:13px;
-      margin-bottom:6px;
-    }
-    .subrow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:6px;
-      font-size:11px;
-      color:var(--muted);
-      margin-bottom:4px;
-    }
-    .subrow span.code{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+  .scoreGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .scoreTile{
+    border-radius:12px;
+    border:1px solid var(--edge);
+    background:#f9fafb;
+    padding:10px 12px;
+  }
+  .scoreLabel{font-size:11px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+  .scoreValue{margin-top:6px;font-size:22px;font-weight:700}
 
-    /* Score tiles */
-    .score-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-      margin-top:8px;
-    }
-    .score-tile{
-      border-radius:12px;
-      border:1px solid var(--edge);
-      padding:10px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .score-label{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      color:var(--muted);
-    }
-    .score-value{
-      font-size:22px;
-      font-weight:800;
-    }
+  .transcriptIntro{margin-bottom:6px;font-size:12px;color:var(--muted);}
+  .transcriptBox{
+    border-radius:12px;border:1px solid var(--edge);background:#f9fafb;
+    padding:10px 12px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.45;
+    white-space:pre-wrap;
+  }
+  .transcriptControls{margin-top:8px;display:flex;justify-content:flex-start}
+  .btnSmall{
+    border-radius:999px;border:1px solid var(--edge);
+    padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;
+  }
 
-    /* Transcript area */
-    .transcript-card{
-      border-radius:12px;
-      border:1px solid var(--edge);
-      padding:10px 12px;
-      margin-top:10px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .trans-head{font-size:12px;font-weight:600;}
-    .trans-body{font-size:12px;color:var(--muted);line-height:1.4;max-height:180px;overflow:auto;white-space:pre-wrap;}
-    .trans-btn{
-      align-self:flex-start;
-      border-radius:999px;
-      border:1px solid var(--edge);
-      background:#111827;
-      color:#fff;
-      font-size:12px;
-      padding:6px 14px;
-      cursor:pointer;
-      font-weight:600;
-    }
+  /* Right column: dashboard */
+  .dashGrid{
+    display:grid;
+    grid-template-columns:minmax(0,3fr) minmax(0,2.1fr);
+    gap:10px;
+  }
+  @media (max-width:900px){
+    .dashGrid{grid-template-columns:1fr}
+  }
 
-    /* Right side: Skill dashboard */
-    .right-top{
-      display:grid;
-      grid-template-columns:2.1fr 1.1fr;
-      gap:12px;
-      margin-top:4px;
-    }
-    @media (max-width:900px){
-      .right-top{grid-template-columns:1fr;}
-    }
+  .gaugeWrap{
+    padding:14px 16px 18px;
+  }
+  .gaugeMetaTop{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    font-size:11px;color:var(--muted);margin-bottom:8px;
+  }
 
-    .gauge-wrap{
-      border-radius:12px;
-      border:1px solid var(--edge);
-      padding:12px 16px 16px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .gauge-head{
-      display:flex;
-      justify-content:space-between;
-      gap:8px;
-      font-size:11px;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.06em;
-    }
-    .gauge{
-      margin-top:4px;
-      width:100%;
-      aspect-ratio: 2 / 1;
-      position:relative;
-      overflow:hidden;
-    }
-    .gauge-arc{
-      position:absolute;
-      inset:auto 6% 0 6%;
-      height:120%;
-      border-radius:999px 999px 0 0;
-      background:linear-gradient(90deg,#f97316,#22c55e,#2563eb);
-    }
-    .gauge-mask{
-      position:absolute;
-      inset:auto 10% -10% 10%;
-      height:150%;
-      background:#f9fafb;
-      border-radius:999px 999px 0 0;
-    }
-    .gauge-needle{
-      position:absolute;
-      inset:auto 0 14%;
-      height:4px;
-      display:flex;
-      justify-content:center;
-      transition:left .25s ease;
-      pointer-events:none;
-    }
-    .gauge-needle-line{
-      width:32%;
-      max-width:160px;
-      border-radius:999px;
-      background:#111827;
-      height:4px;
-    }
-    .gauge-needle-dot{
-      width:12px;
-      height:12px;
-      border-radius:999px;
-      background:#111827;
-      margin-left:4px;
-    }
-    .gauge-labels{
-      position:absolute;
-      inset:auto 8% 8% 8%;
-      display:flex;
-      justify-content:space-between;
-      font-size:12px;
-      color:#374151;
-    }
+  .gaugeShell{
+    position:relative;
+    margin:4px auto 2px;
+    width:100%;
+    max-width:420px;
+    aspect-ratio:2/1;
+    overflow:hidden;
+  }
+  .gaugeArc{
+    position:absolute;left:50%;bottom:-10%;
+    width:140%;aspect-ratio:2/1;
+    transform:translateX(-50%);
+    border-radius:1000px 1000px 0 0;
+    background:conic-gradient(from 210deg,
+      #f97316 0deg,
+      #f97316 60deg,
+      #facc15 90deg,
+      #22c55e 150deg,
+      #22c55e 190deg,
+      #3b82f6 230deg,
+      #1d4ed8 300deg
+    );
+  }
+  .gaugeMask{
+    position:absolute;left:50%;bottom:-10%;
+    width:110%;aspect-ratio:2/1;
+    transform:translateX(-50%);
+    border-radius:1000px 1000px 0 0;
+    background:#f9fafb;
+  }
+  .gaugePointerShell{
+    position:absolute;inset:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    pointer-events:none;
+  }
+  .gaugePointer{
+    width:64%;height:4px;border-radius:999px;background:#111827;
+    transform-origin:50% 100%;
+    transform:rotate(var(--gauge-angle,0deg));
+    transition:transform .5s ease-out;
+    position:relative;
+  }
+  .gaugeKnob{
+    position:absolute;right:0;top:50%;
+    transform:translateY(-50%);
+    width:10px;height:10px;border-radius:999px;background:#111827;
+  }
 
-    .gauge-footer{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-    }
-    .dot-green{
-      width:8px;height:8px;border-radius:999px;background:#22c55e;
-    }
-    .bold{font-weight:600;color:#111827;}
+  .gaugeLabels{
+    margin-top:12px;
+    display:flex;justify-content:space-between;font-size:12px;color:#374151;
+    max-width:420px;margin-inline:auto;
+  }
 
-    .right-bottom{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-    @media (max-width:640px){
-      .right-bottom{grid-template-columns:1fr;}
-    }
-    .mini-card{
-      border-radius:12px;
-      border:1px solid var(--edge);
-      padding:10px 12px;
-      font-size:12px;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-    .mini-label{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      color:var(--muted);
-    }
-    .mini-value{
-      font-weight:600;
-    }
-    .mini-sub{
-      font-size:11px;
-      color:var(--muted);
-    }
+  .gaugeFooter{
+    margin-top:10px;
+    display:flex;align-items:center;gap:6px;
+    font-size:12px;color:var(--muted);
+  }
+  .dotGreen{
+    width:7px;height:7px;border-radius:999px;background:#22c55e;flex:none;
+  }
 
-    .footnote{
-      padding:4px 2px 0;
-      font-size:10px;
-      color:var(--muted);
-    }
-  </style>
+  .metaCards{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .metaCard{
+    border-radius:12px;border:1px solid var(--edge);
+    background:#f9fafb;padding:8px 10px;font-size:12px;
+  }
+  .metaLabel{font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.03em;text-transform:uppercase}
+  .metaValue{font-size:13px;font-weight:500}
+
+  .footNote{
+    margin-top:10px;
+    font-size:11px;color:var(--muted);
+  }
+</style>
 </head>
 <body>
 <div class="shell">
-  <!-- Top bar -->
-  <div class="topbar">
-    <div class="topbar-title">MSS Score Results</div>
-    <button class="topbar-btn" type="button" id="btnCloseTop">Close</button>
-  </div>
+  <div class="frame">
+    <header class="head">
+      <div class="headTitle">MSS Score Results</div>
+      <div class="headSpacer"></div>
+      <button id="closeTop" class="pillBtn" type="button">Close</button>
+    </header>
 
-  <!-- Main -->
-  <div class="main">
-    <div class="frame">
-      <div class="frame-head">
-        <div class="fh-title">MSS Score Results</div>
-        <div style="display:flex;gap:10px;align-items:center;">
-          <div id="loadedAt" class="muted" style="font-size:11px;"></div>
-          <span class="fh-pill">Latest submission</span>
-        </div>
-      </div>
-
-      <div class="cols">
-        <!-- LEFT: scores & transcript -->
-        <div class="card">
-          <div class="card-title">MSS Score Results</div>
-          <div class="subrow">
-            <span>Question: <span id="questionText" class="code">—</span></span>
-            <span>Loaded: <span id="loadedShort" class="code">—</span></span>
-          </div>
-
-          <div class="score-grid">
-            <div class="score-tile">
-              <div class="score-label">TOEFL</div>
-              <div id="scoreToefl" class="score-value">—</div>
+    <main class="body">
+      <div class="grid">
+        <!-- LEFT: headline + scores + transcript -->
+        <section class="card">
+          <div class="cardHead">MSS Score Results</div>
+          <div class="cardBody">
+            <div class="metaRow">
+              <div>Question: <span id="qText">—</span></div>
+              <div>Loaded: <span id="loadedAt">—</span></div>
             </div>
-            <div class="score-tile">
-              <div class="score-label">IELTS</div>
-              <div id="scoreIelts" class="score-value">—</div>
-            </div>
-            <div class="score-tile">
-              <div class="score-label">PTE</div>
-              <div id="scorePte" class="score-value">—</div>
-            </div>
-            <div class="score-tile">
-              <div class="score-label">CEFR</div>
-              <div id="scoreCefr" class="score-value">—</div>
-            </div>
-          </div>
 
-          <div class="transcript-card">
-            <div class="trans-head">Transcript</div>
-            <div id="transcriptIntro" class="trans-body">
-              Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.
-            </div>
-            <div id="transcriptBody" class="trans-body" style="display:none;"></div>
-            <button id="btnTranscript" type="button" class="trans-btn">Show transcript</button>
-          </div>
-        </div>
-
-        <!-- RIGHT: skill dashboard -->
-        <div class="card">
-          <div class="card-title">MSS Skill Dashboard</div>
-
-          <div class="right-top">
-            <!-- Gauge -->
-            <div class="gauge-wrap">
-              <div class="gauge-head">
-                <span>CEFR overview</span>
-                <span>CEFR level</span>
+            <div class="scoreGrid" style="margin-bottom:12px;">
+              <div class="scoreTile">
+                <div class="scoreLabel">TOEFL</div>
+                <div id="scoreToefl" class="scoreValue">—</div>
               </div>
-              <div class="gauge">
-                <div class="gauge-arc"></div>
-                <div class="gauge-mask"></div>
-                <div id="gaugeNeedle" class="gauge-needle" style="left:50%;">
-                  <div class="gauge-needle-line"></div>
-                  <div class="gauge-needle-dot"></div>
+              <div class="scoreTile">
+                <div class="scoreLabel">IELTS</div>
+                <div id="scoreIelts" class="scoreValue">—</div>
+              </div>
+              <div class="scoreTile">
+                <div class="scoreLabel">PTE</div>
+                <div id="scorePte" class="scoreValue">—</div>
+              </div>
+              <div class="scoreTile">
+                <div class="scoreLabel">CEFR</div>
+                <div id="scoreCefr" class="scoreValue">—</div>
+              </div>
+            </div>
+
+            <div style="margin-top:6px;">
+              <div style="font-weight:600;margin-bottom:4px;">Transcript</div>
+              <div class="transcriptIntro">
+                Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.
+              </div>
+              <div id="transcriptBox" class="transcriptBox" style="display:none;"></div>
+              <div class="transcriptControls">
+                <button id="toggleTranscript" class="btnSmall" type="button">Show transcript</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: dashboard -->
+        <section class="card">
+          <div class="cardHead" style="display:flex;justify-content:space-between;align-items:center">
+            <span>MSS Skill Dashboard</span>
+            <button id="closeRight" class="btnSmall" type="button">Close</button>
+          </div>
+          <div class="cardBody">
+            <div class="dashGrid">
+              <!-- gauge -->
+              <div class="gaugeWrap">
+                <div class="gaugeMetaTop">
+                  <div>
+                    <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">CEFR overview</div>
+                    <div>Estimate based on this response.</div>
+                  </div>
+                  <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">CEFR level</div>
                 </div>
-                <div class="gauge-labels">
+
+                <div class="gaugeShell">
+                  <div class="gaugeArc"></div>
+                  <div class="gaugeMask"></div>
+                  <div class="gaugePointerShell">
+                    <div id="gaugePointer" class="gaugePointer">
+                      <div class="gaugeKnob"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gaugeLabels">
                   <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
                 </div>
+
+                <div class="gaugeFooter">
+                  <span class="dotGreen"></span>
+                  <span>Estimated CEFR level: <span id="cefrSummary">—</span></span>
+                </div>
               </div>
-              <div class="gauge-footer">
-                <span class="dot-green"></span>
-                <span>Estimated CEFR level: <span id="cefrLevelLabel" class="bold">—</span></span>
+
+              <!-- meta cards -->
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="metaCards">
+                  <div class="metaCard">
+                    <div class="metaLabel">Audio length</div>
+                    <div id="metaAudio" class="metaValue">—</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">From widget meta data.</div>
+                  </div>
+                  <div class="metaCard">
+                    <div class="metaLabel">Words per minute</div>
+                    <div id="metaWpm" class="metaValue">—</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">If provided by MSS API.</div>
+                  </div>
+                </div>
+                <div class="metaCards">
+                  <div class="metaCard">
+                    <div class="metaLabel">Question</div>
+                    <div id="metaQuestion" class="metaValue">—</div>
+                  </div>
+                  <div class="metaCard">
+                    <div class="metaLabel">Submission type</div>
+                    <div id="metaSource" class="metaValue">Widget</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">Recorded or uploaded via MSS Widget.</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Overall block -->
-            <div class="mini-card">
-              <div class="mini-label">Overall notes</div>
-              <div class="mini-sub">
-                CEFR estimate and basic answer details.
-              </div>
-              <div class="mini-sub" style="margin-top:8px;">
-                These values are approximate and intended for formative feedback, not as certified scores.
-              </div>
+            <div class="footNote">
+              These values are approximate and intended for formative feedback, not as certified scores.
             </div>
           </div>
-
-          <div class="right-bottom">
-            <div class="mini-card">
-              <div class="mini-label">Audio length</div>
-              <div id="valLength" class="mini-value">—</div>
-              <div class="mini-sub">From widget meta data.</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">Words per minute</div>
-              <div id="valWpm" class="mini-value">—</div>
-              <div class="mini-sub">If provided by MSS API.</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">Question</div>
-              <div id="valQuestion" class="mini-value">—</div>
-              <div class="mini-sub">Prompt used for this response.</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">Submission type</div>
-              <div id="valSource" class="mini-value">Widget</div>
-              <div class="mini-sub">Recorded or uploaded via MSS Widget.</div>
-            </div>
-          </div>
-
-          <div class="footnote">
-            These values are approximate and intended for formative feedback, not as certified scores.
-          </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   </div>
 </div>
 
 <script>
-  /* ========= tiny helpers ========= */
-  const $ = (id) => document.getElementById(id);
-  const CEFR_ORDER = ["A1","A2","B1","B2","C1","C2"];
-  let CURRENT_TRANSCRIPT = "";
+/* ---------- tiny DOM helpers ---------- */
+const $ = (id)=>document.getElementById(id);
 
-  function setText(id, value, fallback="—"){
-    const el = $(id);
-    if (!el) return;
-    if (value === undefined || value === null || value === "") {
-      el.textContent = fallback;
-    } else {
-      el.textContent = String(value);
+/* ---------- generic deep find helpers (for flexible JSON) ---------- */
+function deepFindNumber(obj, keyRegex){
+  const seen = new Set();
+  function walk(o){
+    if (!o || typeof o !== 'object' || seen.has(o)) return null;
+    seen.add(o);
+    for (const [k,v] of Object.entries(o)){
+      if (keyRegex.test(k) && typeof v === 'number' && isFinite(v)) return v;
+      if (typeof v === 'object'){
+        const r = walk(v);
+        if (r != null) return r;
+      }
     }
+    return null;
   }
-
-  function formatTimeStamp(d){
-    if (!d) return "—";
-    try{
-      const dd = (d instanceof Date)? d : new Date(d);
-      return dd.toLocaleString();
-    }catch{
-      return "—";
-    }
-  }
-
-  /* ========= CEFR helpers ========= */
-  function normalizeCefr(raw){
-    if (!raw) return null;
-    const s = String(raw).toUpperCase().trim();
-    // handle like "C1 level", "CEFR C1", etc.
-    const m = s.match(/A1|A2|B1|B2|C1|C2/);
-    return m ? m[0] : null;
-  }
-
-  function updateGauge(level){
-    const cefr = normalizeCefr(level);
-    const idx = cefr ? CEFR_ORDER.indexOf(cefr) : -1;
-    const needle = $("gaugeNeedle");
-    if (!needle) return;
-    let pct = 50;
-    if (idx >= 0){
-      pct = (idx / (CEFR_ORDER.length - 1)) * 100;
-    }
-    needle.style.left = pct + "%";
-    setText("cefrLevelLabel", cefr || "—");
-    setText("scoreCefr", cefr || "—");
-  }
-
-  /* ========= apply MSS payload ========= */
-  function applyMSS(rawPayload){
-    let body = rawPayload;
-if (rawPayload?.body && typeof rawPayload.body === "object") {
-  body = rawPayload.body;
-} else if (rawPayload?.payload && typeof rawPayload.payload === "object") {
-  body = rawPayload.payload;
+  return walk(obj);
 }
-body = body || {};
+function deepFindString(obj, keyRegex, valueTest){
+  const seen = new Set();
+  function walk(o){
+    if (!o || typeof o !== 'object' || seen.has(o)) return null;
+    seen.add(o);
+    for (const [k,v] of Object.entries(o)){
+      if (keyRegex.test(k) && typeof v === 'string'){
+        const t = v.trim();
+        if (!valueTest || valueTest(t)) return t;
+      }
+      if (typeof v === 'object'){
+        const r = walk(v);
+        if (r) return r;
+      }
+    }
+    return null;
+  }
+  return walk(obj);
+}
 
-    // Basic scores
-    const toefl = body.toefl || body.toefl_score || body.mapped_scores?.toefl || body.scores?.toefl;
-const ielts = body.ielts || body.ielts_score || body.mapped_scores?.ielts || body.scores?.ielts;
-const pte   = body.pte   || body.pte_score   || body.mapped_scores?.pte   || body.scores?.pte;
-const cefr  = body.cefr  || body.cefr_level  || body.mapped_scores?.cefr  || body.scores?.cefr;
+/* ---------- CEFR helpers ---------- */
+const CEFR_ORDER = ['A1','A2','B1','B2','C1','C2'];
+function normalizeCefrLabel(raw){
+  if (!raw) return null;
+  const t = String(raw).trim().toUpperCase();
+  const m = t.match(/(A1|A2|B1|B2|C1|C2)/);
+  return m ? m[1] : null;
+}
+function setGauge(label){
+  const cefr = normalizeCefrLabel(label);
+  const pointer = $('gaugePointer');
+  const summary = $('cefrSummary');
+  if (!cefr){
+    summary.textContent = '—';
+    pointer.style.setProperty('--gauge-angle','0deg');
+    return;
+  }
+  summary.textContent = cefr;
+  const idx = CEFR_ORDER.indexOf(cefr);
+  const start = -110, end = 110;
+  const step = (end-start)/(CEFR_ORDER.length-1);
+  const angle = start + step * (idx < 0 ? 2.5 : idx);
+  pointer.style.setProperty('--gauge-angle', angle + 'deg');
+}
 
-    setText("scoreToefl", toefl);
-    setText("scoreIelts", ielts);
-    setText("scorePte",   pte);
-    updateGauge(cefr);
+/* ---------- formatting ---------- */
+function fmtScore(v){
+  if (v == null || isNaN(v)) return '—';
+  if (Math.abs(v - Math.round(v)) < 0.01) return String(Math.round(v));
+  return String(Math.round(v*10)/10);
+}
+function fmtTimeSeconds(sec){
+  if (!sec || !isFinite(sec)) return '—';
+  const s = Math.max(0, Math.round(sec));
+  const m = Math.floor(s/60);
+  const r = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
 
-    // Question / prompt
-    const question =
-      body.question ||
-      body.prompt ||
-      body.item_prompt ||
-      body.meta?.question ||
-      "";
-    setText("questionText", question || "—");
-    setText("valQuestion", question || "—");
+/* ---------- main apply ---------- */
+function applyMSS(payloadRaw){
+  const now = new Date();
+  $('loadedAt').textContent = now.toLocaleString();
 
-    // Transcript
-    const transcript =
-      body.transcript ||
-      body.asr_text ||
-      body.speech_recognition_text ||
-      "";
-    CURRENT_TRANSCRIPT = transcript || "";
-    const intro = $("transcriptIntro");
-    const bodyEl = $("transcriptBody");
-    if (!CURRENT_TRANSCRIPT){
-      if (intro) intro.textContent =
-        "Transcript unavailable. Your MSS API response did not include a transcript.";
+  // unwrap a few common shapes
+  const payload = payloadRaw || {};
+  const result = payload.result || payload.response || payload.elsa_results || payload;
+  const meta = payload.meta || payload.widgetMeta || payload.logger || {};
+
+  // scores – try a few places + deep-search
+  const toefl = deepFindNumber(result, /toefl/i);
+  const ielts = deepFindNumber(result, /ielts/i);
+  const pte   = deepFindNumber(result, /\bpte\b/i);
+  const cefrLabel =
+    normalizeCefrLabel(result.cefr || result.cefr_level || result.cefrLabel) ||
+    deepFindString(result, /cefr/i, t=>!!normalizeCefrLabel(t));
+
+  $('scoreToefl').textContent = fmtScore(toefl);
+  $('scoreIelts').textContent = fmtScore(ielts);
+  $('scorePte').textContent   = fmtScore(pte);
+  $('scoreCefr').textContent  = cefrLabel || '—';
+  setGauge(cefrLabel);
+
+  // question text
+  const q =
+    meta.questionText || meta.prompt || result.question ||
+    deepFindString(result, /question/i) || '—';
+  $('qText').textContent = q;
+
+  // meta: audio length & wpm
+  const audioSec = meta.audioSeconds || meta.lengthSeconds || meta.duration_seconds || meta.duration;
+  $('metaAudio').textContent = fmtTimeSeconds(audioSec);
+
+  const wpm = meta.wordsPerMinute || meta.wpm || meta.words_per_minute;
+  $('metaWpm').textContent = wpm && isFinite(wpm) ? Math.round(wpm) + ' wpm' : '—';
+
+  $('metaQuestion').textContent = q;
+  $('metaSource').textContent = meta.source || meta.origin || 'Widget';
+
+  // transcript (plain text)
+  const transcript =
+    meta.transcript_plain || meta.transcript ||
+    result.transcript_plain || result.transcript || '';
+  const box = $('transcriptBox');
+  const toggle = $('toggleTranscript');
+  if (transcript && transcript.trim()){
+    box.textContent = transcript.replace(/\r\n/g,'\n');
+    box.style.display = 'none';
+    toggle.disabled = false;
+    toggle.textContent = 'Show transcript';
+  }else{
+    box.textContent = 'Transcript not available.';
+    box.style.display = 'block';
+    toggle.disabled = true;
+    toggle.textContent = 'Transcript unavailable';
+  }
+}
+
+/* ---------- transcript toggle ---------- */
+function setupTranscriptToggle(){
+  const box = $('transcriptBox');
+  const btn = $('toggleTranscript');
+  btn.addEventListener('click', ()=>{
+    const showing = box.style.display !== 'none';
+    if (showing){
+      box.style.display = 'none';
+      btn.textContent = 'Show transcript';
     }else{
-      if (intro) intro.textContent =
-        "Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.";
-      bodyEl.innerHTML = "";
-	bodyEl.textContent = CURRENT_TRANSCRIPT
-  	.replace(/<[^>]+>/g, "")           // strip any HTML tags
-  	.replace(/&[#A-Za-z0-9]+;/g, " "); // decode artifacts like &#8203;
-    }
-
-    // Length & WPM (best-effort; may be missing)
-    const lenSec = body.length_sec ?? body.audio_length_sec ?? body.audio_duration_sec ?? body.meta?.lengthSec;
-    if (lenSec){
-      const n = Number(lenSec);
-      const disp = Number.isFinite(n)
-        ? (n >= 60
-            ? `${Math.floor(n/60)}:${String(Math.round(n%60)).padStart(2,"0")} min`
-            : `${Math.round(n)} sec`)
-        : String(lenSec);
-      setText("valLength", disp);
-    }
-
-    const wpm = body.wpm ?? body.words_per_minute ?? body.meta?.wpm;
-    if (wpm){
-      const num = Number(wpm);
-      setText("valWpm", Number.isFinite(num) ? num.toFixed(0) : wpm);
-    }
-
-    // timestamps
-    const now = new Date();
-    setText("loadedAt", "Loaded: " + formatTimeStamp(now));
-    setText("loadedShort", formatTimeStamp(now));
-  }
-
-  /* ========= wiring ========= */
-  function boot(){
-    // close buttons
-    const closeAll = () => {
-      try{
-        if (window.opener && !window.opener.closed){
-          // Give the opener a chance to focus
-          window.opener.focus();
-        }
-      }catch{}
-      window.close();
-    };
-    $("btnCloseTop")?.addEventListener("click", closeAll);
-
-    // transcript toggle
-    const btn = $("btnTranscript");
-    const intro = $("transcriptIntro");
-    const bodyEl = $("transcriptBody");
-    if (btn){
-      btn.addEventListener("click", ()=>{
-        if (!CURRENT_TRANSCRIPT){
-          alert("Transcript is not available for this response.");
-          return;
-        }
-        const showing = bodyEl && bodyEl.style.display !== "none";
-        if (showing){
-          bodyEl.style.display = "none";
-          if (intro){
-            intro.style.display = "block";
-          }
-          btn.textContent = "Show transcript";
-        }else{
-          if (intro){
-            intro.style.display = "none";
-          }
-          bodyEl.style.display = "block";
-          btn.textContent = "Hide transcript";
-        }
-      });
-    }
-  }
-
-  // Receive payload from Widget.html
-  window.addEventListener("message", (e)=>{
-    try{
-      const msg = e.data || {};
-      if (msg.type !== "mss-results" || !msg.payload) return;
-      applyMSS(msg.payload);
-    }catch(err){
-      console.warn("[Dashboard] postMessage error", err);
+      box.style.display = 'block';
+      btn.textContent = 'Hide transcript';
     }
   });
+}
 
-  window.addEventListener("DOMContentLoaded", boot);
+/* ---------- close helpers ---------- */
+function closeSelf(){
+  try{
+    window.close();
+  }catch(e){
+    // fallback: hide frame
+    const shell = document.querySelector('.shell');
+    if (shell) shell.style.display='none';
+  }
+}
+
+/* ---------- payload from hash (debug / direct open) ---------- */
+function parseHashPayload(){
+  if (!location.hash) return null;
+  const raw = decodeURIComponent(location.hash.slice(1));
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  $('closeTop').addEventListener('click', closeSelf);
+  $('closeRight').addEventListener('click', closeSelf);
+  setupTranscriptToggle();
+
+  const fromHash = parseHashPayload();
+  if (fromHash) applyMSS(fromHash);
+
+  window.addEventListener('message', (ev)=>{
+    const d = ev.data;
+    if (!d) return;
+    if (d.type === 'mss:result' || d.type === 'mss-result' || d.type === 'mssScore'){
+      applyMSS(d.payload || d.result || d);
+    }else if (d.result || d.meta || d.elsa_results){
+      // generic fallback – treat whole message as payload
+      applyMSS(d);
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>
