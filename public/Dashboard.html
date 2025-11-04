@@ -15,8 +15,6 @@
       --accent-soft:#eff6ff;
       --accent-strong:#1e40af;
       --good:#16a34a;
-      --warn:#f97316;
-      --bad:#dc2626;
       --chip:#f9fafb;
     }
     *{box-sizing:border-box;}
@@ -34,7 +32,6 @@
       flex-direction:column;
       gap:12px;
     }
-
     .dash-top{
       display:flex;
       flex-wrap:wrap;
@@ -50,7 +47,6 @@
       font-size:.8rem;
       color:var(--muted);
     }
-
     .grid{
       display:grid;
       grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
@@ -59,7 +55,6 @@
     @media (max-width: 768px){
       .grid{ grid-template-columns:1fr; }
     }
-
     .card{
       background:var(--card);
       border-radius:16px;
@@ -162,7 +157,7 @@
       color:var(--ink);
     }
 
-    /* Equivalency card */
+    /* Equivalency chips */
     .eq-header{
       font-size:.85rem;
       font-weight:600;
@@ -205,12 +200,80 @@
       color:var(--muted);
     }
 
+    /* CEFR gauge */
+    .gauge-block{
+      margin-top:6px;
+      padding-top:8px;
+      border-top:1px solid var(--edge);
+    }
+    .gauge-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      margin-bottom:6px;
+    }
+    .gauge-title{
+      font-size:.8rem;
+      font-weight:600;
+    }
+    .gauge-right-label{
+      font-size:.75rem;
+      color:var(--muted);
+    }
+    .gauge-arc{
+      position:relative;
+      height:120px;
+      border-radius:120px 120px 0 0;
+      background:
+        conic-gradient(from 180deg,
+          #f97316,
+          #facc15,
+          #22c55e,
+          #0ea5e9);
+      mask:linear-gradient(#000 0 55%, transparent 55% 100%);
+      -webkit-mask:linear-gradient(#000 0 55%, transparent 55% 100%);
+      margin:4px 32px 10px;
+      overflow:hidden;
+    }
+    .gauge-slider{
+      position:relative;
+      height:4px;
+      border-radius:999px;
+      background:#e5e7eb;
+      margin:0 52px;
+    }
+    .gauge-thumb{
+      position:absolute;
+      top:50%;
+      left:var(--pos,50%);
+      transform:translate(-50%,-50%);
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      background:#111827;
+    }
+    .gauge-scale{
+      display:flex;
+      justify-content:space-between;
+      padding:0 44px;
+      margin-top:4px;
+      font-size:.75rem;
+      color:#4b5563;
+    }
+    .gauge-cefr-label{
+      margin-top:6px;
+      font-size:.8rem;
+      color:#4b5563;
+    }
+
     /* Skill breakdown */
     .skills-head{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:6px;
+      margin-top:10px;
       margin-bottom:8px;
     }
     .skills-title{
@@ -314,7 +377,6 @@
       margin-top:4px;
     }
 
-    /* tiny debug pill (optional) */
     .debug-pill{
       font-size:.7rem;
       color:var(--muted);
@@ -371,7 +433,7 @@
       </div>
     </div>
 
-    <!-- RIGHT: Equivalencies + Skills -->
+    <!-- RIGHT: Equivalencies + CEFR gauge + Skills -->
     <div class="card">
       <!-- Equivalency chips -->
       <div class="eq-header">Test equivalencies</div>
@@ -406,40 +468,57 @@
         </div>
       </div>
 
-      <!-- Skill breakdown -->
-      <div style="margin-top:10px;">
-        <div class="skills-head">
-          <div class="skills-title">Skill breakdown</div>
-          <div class="skills-note">From ELSA metrics (0–100)</div>
+      <!-- CEFR gauge -->
+      <div class="gauge-block">
+        <div class="gauge-head">
+          <div class="gauge-title">CEFR overview</div>
+          <div class="gauge-right-label">CEFR level</div>
         </div>
-        <div class="skills-grid">
-          <div class="skill-card">
-            <div class="skill-label">Fluency</div>
-            <div class="skill-main">
-              <div id="skillFluency" class="skill-value">—</div>
-              <div id="skillFluencyTag" class="skill-tag">—</div>
-            </div>
+        <div class="gauge-arc"></div>
+        <div class="gauge-slider">
+          <div id="gaugeThumb" class="gauge-thumb"></div>
+        </div>
+        <div class="gauge-scale">
+          <span>A1</span><span>A2</span><span>B1</span>
+          <span>B2</span><span>C1</span><span>C2</span>
+        </div>
+        <div class="gauge-cefr-label">
+          Estimated CEFR level: <strong id="gaugeCefrText">—</strong>
+        </div>
+      </div>
+
+      <!-- Skill breakdown -->
+      <div class="skills-head">
+        <div class="skills-title">Skill breakdown</div>
+        <div class="skills-note">From ELSA metrics (0–100)</div>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-label">Fluency</div>
+          <div class="skill-main">
+            <div id="skillFluency" class="skill-value">—</div>
+            <div id="skillFluencyTag" class="skill-tag">—</div>
           </div>
-          <div class="skill-card">
-            <div class="skill-label">Grammar</div>
-            <div class="skill-main">
-              <div id="skillGrammar" class="skill-value">—</div>
-              <div id="skillGrammarTag" class="skill-tag">—</div>
-            </div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-label">Grammar</div>
+          <div class="skill-main">
+            <div id="skillGrammar" class="skill-value">—</div>
+            <div id="skillGrammarTag" class="skill-tag">—</div>
           </div>
-          <div class="skill-card">
-            <div class="skill-label">Pronunciation</div>
-            <div class="skill-main">
-              <div id="skillPron" class="skill-value">—</div>
-              <div id="skillPronTag" class="skill-tag">—</div>
-            </div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-label">Pronunciation</div>
+          <div class="skill-main">
+            <div id="skillPron" class="skill-value">—</div>
+            <div id="skillPronTag" class="skill-tag">—</div>
           </div>
-          <div class="skill-card">
-            <div class="skill-label">Vocabulary</div>
-            <div class="skill-main">
-              <div id="skillVocab" class="skill-value">—</div>
-              <div id="skillVocabTag" class="skill-tag">—</div>
-            </div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-label">Vocabulary</div>
+          <div class="skill-main">
+            <div id="skillVocab" class="skill-value">—</div>
+            <div id="skillVocabTag" class="skill-tag">—</div>
           </div>
         </div>
       </div>
@@ -490,6 +569,13 @@
     if (n >= 70) return 'Strong';
     if (n >= 55) return 'Developing';
     return 'Needs work';
+  }
+  function stripHtmlTranscript(raw){
+    if (!raw) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(raw);
+    const text = tmp.textContent || tmp.innerText || '';
+    return text.replace(/\s+/g,' ').trim();
   }
 
   function normalizePayload(raw){
@@ -576,10 +662,24 @@
       transcript,
       durationSec,
       createdAt,
-      skills:{
-        fluency, grammar, pron, vocab
-      }
+      skills:{ fluency, grammar, pron, vocab }
     };
+  }
+
+  function updateGauge(cefr){
+    const thumb = $('gaugeThumb');
+    const label = $('gaugeCefrText');
+    if (!thumb || !label) return;
+    if (!cefr){
+      thumb.style.setProperty('--pos','50%');
+      label.textContent = '—';
+      return;
+    }
+    const key = cefr.toUpperCase();
+    const map = { A1:5, A2:23, B1:41, B2:59, C1:77, C2:95 };
+    const pos = (map[key] ?? 50) + '%';
+    thumb.style.setProperty('--pos', pos);
+    label.textContent = key;
   }
 
   function applyMSS(raw){
@@ -604,7 +704,6 @@
       overallNum >= 26 ? 'High proficiency' :
       overallNum >= 22 ? 'Strong' :
       overallNum >= 18 ? 'Developing' : 'Needs improvement';
-
     $('overallTag').textContent = tag;
 
     // CEFR
@@ -616,6 +715,7 @@
       $('cefrPill').style.display = 'none';
       $('chipCefr').textContent = '—';
     }
+    updateGauge(norm.cefr);
 
     // test equivalencies + bars
     const toeflNum = toNumberOrEmpty(norm.toefl);
@@ -649,19 +749,17 @@
       valEl.textContent = n === '' ? String(val) : n;
       tagEl.textContent = ratingTag(n === '' ? Number(val) : n);
     }
-
     setSkill('Fluency', s.fluency);
     setSkill('Grammar', s.grammar);
     setSkill('Pron',    s.pron);
     setSkill('Vocab',   s.vocab);
 
-    // transcript
-    const tx = norm.transcript || '';
-    const hasTx = tx.trim().length > 0;
-    $('txBody').textContent = hasTx ? tx.trim() : '(No transcript returned.)';
+    // transcript (cleaned)
+    const txClean = stripHtmlTranscript(norm.transcript);
+    const hasTx = txClean.length > 0;
+    $('txBody').textContent = hasTx ? txClean : '(No transcript returned.)';
     $('txMeta').textContent = hasTx ? 'Raw ASR transcript' : '';
 
-    // footer note
     $('footerNote').textContent = 'Dashboard view only – underlying JSON is logged separately.';
   }
 
@@ -669,7 +767,6 @@
     const btn = $('txToggleBtn');
     const body = $('txBody');
     if (!btn || !body) return;
-
     btn.addEventListener('click', ()=>{
       const open = body.classList.toggle('open');
       const labelSpan = btn.querySelector('span:nth-child(2)');
@@ -684,7 +781,6 @@
     const d = ev.data;
     if (!d) return;
     console.log('📨 Dashboard received message:', d);
-
     let payload = d;
     if (typeof d === 'object'){
       payload = d.payload || d.result || d.data || d.mss || d;
@@ -696,25 +792,25 @@
     }
   });
 
-  // Optional: demo mode if you open Dashboard.html directly with ?demo=1
+  // Optional demo mode ?demo=1
   function maybeDemo(){
     const qs = new URLSearchParams(location.search);
     if (!qs.get('demo')) return;
     const fake = {
-      overall_score: 23,
-      toefl_score: 23,
-      ielts_score: 6.5,
-      pte_score: 58,
-      cefr_level: 'B2',
-      duration_seconds: 78,
+      overall_score: 3.18,
+      toefl_score: 29,
+      ielts_score: 8.5,
+      pte_score: 88,
+      cefr_level: 'C2',
+      duration_seconds: 36,
       created_at: new Date().toISOString(),
       elsa_results:{
-        fluency: 78,
-        grammar: 72,
-        pronunciation: 81,
-        vocabulary: 69
+        fluency: 93,
+        grammar: 98,
+        pronunciation: 83,
+        vocabulary: 86
       },
-      transcript: 'This is a demo transcript so you can test the dashboard without calling the API.'
+      transcript: 'This is a demo transcript so we can preview the dashboard without calling the MSS API.'
     };
     applyMSS(fake);
   }
