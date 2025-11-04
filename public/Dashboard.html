@@ -485,13 +485,19 @@
 
   /* ========= apply MSS payload ========= */
   function applyMSS(rawPayload){
-    const body = rawPayload?.body || rawPayload?.result || rawPayload || {};
+    let body = rawPayload;
+if (rawPayload?.body && typeof rawPayload.body === "object") {
+  body = rawPayload.body;
+} else if (rawPayload?.payload && typeof rawPayload.payload === "object") {
+  body = rawPayload.payload;
+}
+body = body || {};
 
     // Basic scores
-    const toefl = body.toefl ?? body.toefl_score ?? body.scores?.toefl;
-    const ielts = body.ielts ?? body.ielts_score ?? body.scores?.ielts;
-    const pte   = body.pte   ?? body.pte_score   ?? body.scores?.pte;
-    const cefr  = body.cefr  ?? body.cefr_level  ?? body.scores?.cefr;
+    const toefl = body.toefl || body.toefl_score || body.mapped_scores?.toefl || body.scores?.toefl;
+const ielts = body.ielts || body.ielts_score || body.mapped_scores?.ielts || body.scores?.ielts;
+const pte   = body.pte   || body.pte_score   || body.mapped_scores?.pte   || body.scores?.pte;
+const cefr  = body.cefr  || body.cefr_level  || body.mapped_scores?.cefr  || body.scores?.cefr;
 
     setText("scoreToefl", toefl);
     setText("scoreIelts", ielts);
