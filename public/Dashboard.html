@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <title>MSS Score Results</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{
     --bg:#f3f4f6;
@@ -12,527 +12,591 @@
     --muted:#6b7280;
     --title:#111827;
     --accent:#2563eb;
+    --danger:#b45309;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#111827}
-  body{background:#111827}
-
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:rgba(17,24,39,.7);
+  }
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
   .shell{
-    position:fixed;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(15,23,42,.80);
-    z-index:9999;
-  }
-  .frame{
-    width:min(1160px,100vw);
-    height:min(90vh,720px);
+    width:min(1040px,100vw - 32px);
+    max-height:calc(100vh - 32px);
     background:var(--bg);
     border-radius:18px;
-    box-shadow:0 25px 60px rgba(0,0,0,.35);
+    box-shadow:0 24px 55px rgba(15,23,42,.45);
     display:flex;
     flex-direction:column;
     overflow:hidden;
   }
-
-  .head{
-    padding:10px 16px;
-    background:#f9fafb;
-    border-bottom:1px solid var(--edge);
+  .shellHeader{
+    padding:10px 18px;
+    background:#111827;
+    color:#e5e7eb;
     display:flex;
     align-items:center;
-    gap:10px;
+    justify-content:space-between;
   }
-  .headTitle{font-weight:700;color:#111827}
-  .headSpacer{flex:1}
+  .shellTitle{
+    font-weight:700;
+    font-size:15px;
+  }
   .pillBtn{
-    border-radius:999px;border:1px solid var(--edge);
-    background:#fff;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;
+    border-radius:999px;
+    border:none;
+    padding:6px 14px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    background:#e5e7eb;
+    color:#111827;
+  }
+  .pillBtn.gray{ background:#e5e7eb; }
+  .pillBtn.primary{
+    background:#f9fafb;
+    color:#111827;
   }
 
-  .body{
-    flex:1;
+  .inner{
     padding:14px 16px 16px;
     overflow:auto;
   }
 
-  .grid{
-    display:grid;
-    grid-template-columns:minmax(0,1.05fr) minmax(0,1.1fr);
-    gap:14px;
+  .hRow{
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
   }
-  @media (max-width:900px){
-    .frame{height:100vh;border-radius:0}
-    .grid{grid-template-columns:1fr}
+  @media (max-width:880px){
+    .hRow{ flex-direction:column; }
   }
 
   .card{
     background:var(--card);
-    border-radius:14px;
+    border-radius:16px;
     border:1px solid var(--edge);
-    box-shadow:0 8px 24px rgba(15,23,42,.08);
+    box-shadow:0 12px 32px rgba(15,23,42,.08);
   }
   .cardHead{
-    padding:10px 14px 6px;
+    padding:10px 14px 4px;
     border-bottom:1px solid var(--edge);
-    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:13px;
     font-weight:700;
   }
-  .cardBody{padding:10px 14px 14px;font-size:13px;color:#111827}
-
-  .metaRow{
-    display:flex;justify-content:space-between;align-items:center;
-    font-size:12px;color:var(--muted);margin-bottom:6px;
+  .cardBody{
+    padding:10px 14px 14px;
   }
 
+  .kRow{
+    display:flex;
+    align-items:center;
+    font-size:11px;
+    color:var(--muted);
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+
+  /* score tiles */
   .scoreGrid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
+    gap:10px;
+    margin-bottom:12px;
   }
   .scoreTile{
-    border-radius:12px;
+    border-radius:14px;
+    border:1px solid var(--edge);
+    padding:10px 12px 12px;
+    background:#f9fafb;
+  }
+  .scoreLabel{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+  }
+  .scoreVal{
+    font-size:20px;
+    font-weight:700;
+    margin-top:4px;
+  }
+  .scoreSub{
+    margin-top:3px;
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .transcriptBox{
+    margin-top:8px;
+    border-radius:14px;
     border:1px solid var(--edge);
     background:#f9fafb;
-    padding:10px 12px;
+    padding:10px 12px 12px;
+    font-size:12px;
   }
-  .scoreLabel{font-size:11px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
-  .scoreValue{margin-top:6px;font-size:22px;font-weight:700}
-
-  .transcriptIntro{margin-bottom:6px;font-size:12px;color:var(--muted);}
-  .transcriptBox{
-    border-radius:12px;border:1px solid var(--edge);background:#f9fafb;
-    padding:10px 12px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.45;
+  .transcriptText{
+    margin-top:6px;
+    color:#111827;
+    line-height:1.5;
     white-space:pre-wrap;
   }
-  .transcriptControls{margin-top:8px;display:flex;justify-content:flex-start}
+  .transcriptHint{
+    font-size:11px;
+    color:var(--muted);
+  }
   .btnSmall{
-    border-radius:999px;border:1px solid var(--edge);
-    padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;
+    margin-top:6px;
+    border-radius:999px;
+    border:1px solid #111827;
+    padding:5px 12px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    background:#111827;
+    color:#f9fafb;
   }
 
-  /* Right column: dashboard */
-  .dashGrid{
-    display:grid;
-    grid-template-columns:minmax(0,3fr) minmax(0,2.1fr);
-    gap:10px;
-  }
-  @media (max-width:900px){
-    .dashGrid{grid-template-columns:1fr}
-  }
-
+  /* right / gauge card */
   .gaugeWrap{
-    padding:14px 16px 18px;
+    padding-top:6px;
   }
-  .gaugeMetaTop{
-    display:flex;justify-content:space-between;align-items:flex-start;
-    font-size:11px;color:var(--muted);margin-bottom:8px;
-  }
-
-  .gaugeShell{
+  .gaugeFace{
     position:relative;
-    margin:4px auto 2px;
     width:100%;
-    max-width:420px;
-    aspect-ratio:2/1;
+    padding-bottom:53%; /* set height */
+    border-radius:999px 999px 0 0;
+    background:conic-gradient(
+      from 180deg,
+      #f97316 0deg,
+      #f97316 45deg,
+      #facc15 90deg,
+      #4ade80 160deg,
+      #22c55e 210deg,
+      #2563eb 270deg
+    );
     overflow:hidden;
   }
-  .gaugeArc{
-    position:absolute;left:50%;bottom:-10%;
-    width:140%;aspect-ratio:2/1;
-    transform:translateX(-50%);
-    border-radius:1000px 1000px 0 0;
-    background:conic-gradient(from 210deg,
-      #f97316 0deg,
-      #f97316 60deg,
-      #facc15 90deg,
-      #22c55e 150deg,
-      #22c55e 190deg,
-      #3b82f6 230deg,
-      #1d4ed8 300deg
-    );
-  }
-  .gaugeMask{
-    position:absolute;left:50%;bottom:-10%;
-    width:110%;aspect-ratio:2/1;
-    transform:translateX(-50%);
-    border-radius:1000px 1000px 0 0;
+  .gaugeInner{
+    position:absolute;
+    inset:22% 8% -25% 8%;
     background:#f9fafb;
+    border-radius:999px;
   }
-  .gaugePointerShell{
-    position:absolute;inset:0;
-    display:flex;align-items:flex-end;justify-content:center;
-    pointer-events:none;
+  .gaugeMarker{
+    position:absolute;
+    bottom:12%;
+    width:14px;
+    height:14px;
+    border-radius:999px;
+    background:#111827;
+    transform:translateX(-50%);
   }
-  .gaugePointer{
-    width:64%;height:4px;border-radius:999px;background:#111827;
-    transform-origin:50% 100%;
-    transform:rotate(var(--gauge-angle,0deg));
-    transition:transform .5s ease-out;
-    position:relative;
+  .gaugeAxis{
+    position:absolute;
+    bottom:12%;
+    left:12%;
+    right:12%;
+    height:3px;
+    border-radius:999px;
+    background:#111827;
+    opacity:.35;
   }
-  .gaugeKnob{
-    position:absolute;right:0;top:50%;
-    transform:translateY(-50%);
-    width:10px;height:10px;border-radius:999px;background:#111827;
+  .gaugeLevels{
+    display:flex;
+    justify-content:space-between;
+    margin-top:6px;
+    font-size:11px;
+    color:#4b5563;
   }
-
-  .gaugeLabels{
-    margin-top:12px;
-    display:flex;justify-content:space-between;font-size:12px;color:#374151;
-    max-width:420px;margin-inline:auto;
+  .cefrRow{
+    margin-top:8px;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:#111827;
   }
-
-  .gaugeFooter{
-    margin-top:10px;
-    display:flex;align-items:center;gap:6px;
-    font-size:12px;color:var(--muted);
+  .dot{
+    width:7px;
+    height:7px;
+    border-radius:999px;
+    background:#16a34a;
   }
-  .dotGreen{
-    width:7px;height:7px;border-radius:999px;background:#22c55e;flex:none;
-  }
-
-  .metaCards{
+  .metaGrid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
+    gap:10px;
+    margin-top:10px;
   }
-  .metaCard{
-    border-radius:12px;border:1px solid var(--edge);
-    background:#f9fafb;padding:8px 10px;font-size:12px;
+  .metaTile{
+    border-radius:14px;
+    border:1px solid var(--edge);
+    padding:8px 10px 10px;
+    background:#f9fafb;
+    font-size:11px;
   }
-  .metaLabel{font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.03em;text-transform:uppercase}
-  .metaValue{font-size:13px;font-weight:500}
+  .metaLabel{
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .metaValue{
+    font-size:13px;
+    font-weight:600;
+    color:#111827;
+  }
+  .metaSub{
+    margin-top:3px;
+    font-size:11px;
+    color:var(--muted);
+  }
 
   .footNote{
     margin-top:10px;
-    font-size:11px;color:var(--muted);
+    font-size:11px;
+    color:var(--muted);
+  }
+  #mssNote{
+    margin-top:4px;
+    font-size:11px;
+    color:var(--danger);
+    display:none;
   }
 </style>
 </head>
 <body>
 <div class="shell">
-  <div class="frame">
-    <header class="head">
-      <div class="headTitle">MSS Score Results</div>
-      <div class="headSpacer"></div>
-      <button id="closeTop" class="pillBtn" type="button">Close</button>
-    </header>
+  <header class="shellHeader">
+    <div class="shellTitle">MSS Score Results</div>
+    <button type="button" class="pillBtn primary" id="btnCloseTop">Close</button>
+  </header>
 
-    <main class="body">
-      <div class="grid">
-        <!-- LEFT: headline + scores + transcript -->
-        <section class="card">
-          <div class="cardHead">MSS Score Results</div>
-          <div class="cardBody">
-            <div class="metaRow">
-              <div>Question: <span id="qText">—</span></div>
-              <div>Loaded: <span id="loadedAt">—</span></div>
+  <div class="inner">
+    <div class="hRow">
+      <!-- LEFT: core scores + transcript -->
+      <div class="card" style="flex:1 1 0;min-width:0;">
+        <div class="cardHead">
+          <span>MSS Score Results</span>
+          <span style="font-size:11px;color:var(--muted);">
+            <span>Loaded: </span><span id="loadedAt">—</span>
+          </span>
+        </div>
+        <div class="cardBody">
+          <div class="kRow">
+            <span>Question: <span id="qText">—</span></span>
+          </div>
+
+          <div class="scoreGrid">
+            <div class="scoreTile">
+              <div class="scoreLabel">TOEFL</div>
+              <div id="toeflVal" class="scoreVal">—</div>
+              <div class="scoreSub" id="toeflSub">Approximate score</div>
             </div>
-
-            <div class="scoreGrid" style="margin-bottom:12px;">
-              <div class="scoreTile">
-                <div class="scoreLabel">TOEFL</div>
-                <div id="scoreToefl" class="scoreValue">—</div>
-              </div>
-              <div class="scoreTile">
-                <div class="scoreLabel">IELTS</div>
-                <div id="scoreIelts" class="scoreValue">—</div>
-              </div>
-              <div class="scoreTile">
-                <div class="scoreLabel">PTE</div>
-                <div id="scorePte" class="scoreValue">—</div>
-              </div>
-              <div class="scoreTile">
-                <div class="scoreLabel">CEFR</div>
-                <div id="scoreCefr" class="scoreValue">—</div>
-              </div>
+            <div class="scoreTile">
+              <div class="scoreLabel">IELTS</div>
+              <div id="ieltsVal" class="scoreVal">—</div>
+              <div class="scoreSub" id="ieltsSub">0 – 9</div>
             </div>
-
-            <div style="margin-top:6px;">
-              <div style="font-weight:600;margin-bottom:4px;">Transcript</div>
-              <div class="transcriptIntro">
-                Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.
-              </div>
-              <div id="transcriptBox" class="transcriptBox" style="display:none;"></div>
-              <div class="transcriptControls">
-                <button id="toggleTranscript" class="btnSmall" type="button">Show transcript</button>
-              </div>
+            <div class="scoreTile">
+              <div class="scoreLabel">PTE</div>
+              <div id="pteVal" class="scoreVal">—</div>
+              <div class="scoreSub" id="pteSub">10 – 90</div>
+            </div>
+            <div class="scoreTile">
+              <div class="scoreLabel">CEFR</div>
+              <div id="cefrVal" class="scoreVal">—</div>
+              <div class="scoreSub" id="cefrSub">CEFR level</div>
             </div>
           </div>
-        </section>
 
-        <!-- RIGHT: dashboard -->
-        <section class="card">
-          <div class="cardHead" style="display:flex;justify-content:space-between;align-items:center">
-            <span>MSS Skill Dashboard</span>
-            <button id="closeRight" class="btnSmall" type="button">Close</button>
-          </div>
-          <div class="cardBody">
-            <div class="dashGrid">
-              <!-- gauge -->
-              <div class="gaugeWrap">
-                <div class="gaugeMetaTop">
-                  <div>
-                    <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">CEFR overview</div>
-                    <div>Estimate based on this response.</div>
-                  </div>
-                  <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">CEFR level</div>
-                </div>
-
-                <div class="gaugeShell">
-                  <div class="gaugeArc"></div>
-                  <div class="gaugeMask"></div>
-                  <div class="gaugePointerShell">
-                    <div id="gaugePointer" class="gaugePointer">
-                      <div class="gaugeKnob"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="gaugeLabels">
-                  <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
-                </div>
-
-                <div class="gaugeFooter">
-                  <span class="dotGreen"></span>
-                  <span>Estimated CEFR level: <span id="cefrSummary">—</span></span>
-                </div>
-              </div>
-
-              <!-- meta cards -->
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                <div class="metaCards">
-                  <div class="metaCard">
-                    <div class="metaLabel">Audio length</div>
-                    <div id="metaAudio" class="metaValue">—</div>
-                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">From widget meta data.</div>
-                  </div>
-                  <div class="metaCard">
-                    <div class="metaLabel">Words per minute</div>
-                    <div id="metaWpm" class="metaValue">—</div>
-                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">If provided by MSS API.</div>
-                  </div>
-                </div>
-                <div class="metaCards">
-                  <div class="metaCard">
-                    <div class="metaLabel">Question</div>
-                    <div id="metaQuestion" class="metaValue">—</div>
-                  </div>
-                  <div class="metaCard">
-                    <div class="metaLabel">Submission type</div>
-                    <div id="metaSource" class="metaValue">Widget</div>
-                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">Recorded or uploaded via MSS Widget.</div>
-                  </div>
-                </div>
-              </div>
+          <div class="transcriptBox">
+            <div style="font-weight:600;font-size:12px;">Transcript</div>
+            <div class="transcriptHint" id="transcriptHint">
+              Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.
             </div>
-
-            <div class="footNote">
-              These values are approximate and intended for formative feedback, not as certified scores.
-            </div>
+            <div id="transcriptText" class="transcriptText" style="display:none;"></div>
+            <button type="button" id="btnTranscript" class="btnSmall">Show transcript</button>
           </div>
-        </section>
+        </div>
       </div>
-    </main>
+
+      <!-- RIGHT: gauge + meta -->
+      <div class="card" style="flex:1 1 0;min-width:0;">
+        <div class="cardHead">
+          <span>MSS Skill Dashboard</span>
+          <button type="button" class="pillBtn gray" id="btnCloseSmall">Close</button>
+        </div>
+        <div class="cardBody">
+          <div class="gaugeWrap">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
+              <div><strong>CEFR overview</strong><br/>Estimate based on this response.</div>
+              <div style="text-align:right;"><strong>CEFR level</strong><br/><span id="cefrLevelText">—</span></div>
+            </div>
+            <div class="gaugeFace">
+              <div class="gaugeInner"></div>
+              <div class="gaugeAxis"></div>
+              <div id="gaugeMarker" class="gaugeMarker"></div>
+            </div>
+            <div class="gaugeLevels">
+              <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
+            </div>
+            <div class="cefrRow">
+              <span class="dot"></span>
+              <span>Estimated CEFR level: <span id="cefrLevelDetail">—</span></span>
+            </div>
+          </div>
+
+          <div class="metaGrid">
+            <div class="metaTile">
+              <div class="metaLabel">Audio length</div>
+              <div id="audioLength" class="metaValue">—</div>
+              <div class="metaSub">From widget meta data.</div>
+            </div>
+            <div class="metaTile">
+              <div class="metaLabel">Words per minute</div>
+              <div id="wpmVal" class="metaValue">—</div>
+              <div class="metaSub">If provided by MSS API.</div>
+            </div>
+            <div class="metaTile">
+              <div class="metaLabel">Question</div>
+              <div id="questionMeta" class="metaValue">—</div>
+              <div class="metaSub">Prompt used for this response.</div>
+            </div>
+            <div class="metaTile">
+              <div class="metaLabel">Submission type</div>
+              <div id="submissionType" class="metaValue">Widget</div>
+              <div class="metaSub">Recorded or uploaded via MSS Widget.</div>
+            </div>
+          </div>
+
+          <p class="footNote">
+            These values are approximate and intended for formative feedback, not as certified scores.
+          </p>
+          <p id="mssNote"></p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-/* ---------- tiny DOM helpers ---------- */
-const $ = (id)=>document.getElementById(id);
+  // tiny helpers
+  const $ = (id)=>document.getElementById(id);
+  const LEVELS = ["A1","A2","B1","B2","C1","C2"];
 
-/* ---------- generic deep find helpers (for flexible JSON) ---------- */
-function deepFindNumber(obj, keyRegex){
-  const seen = new Set();
-  function walk(o){
-    if (!o || typeof o !== 'object' || seen.has(o)) return null;
-    seen.add(o);
-    for (const [k,v] of Object.entries(o)){
-      if (keyRegex.test(k) && typeof v === 'number' && isFinite(v)) return v;
-      if (typeof v === 'object'){
-        const r = walk(v);
-        if (r != null) return r;
+  function pick(obj, paths, fallback=null){
+    for(const p of paths){
+      const segs = p.split(".");
+      let cur = obj;
+      let ok = true;
+      for(const s of segs){
+        if(cur && Object.prototype.hasOwnProperty.call(cur,s)){
+          cur = cur[s];
+        }else{
+          ok = false; break;
+        }
       }
+      if(ok && cur != null) return cur;
     }
-    return null;
+    return fallback;
   }
-  return walk(obj);
-}
-function deepFindString(obj, keyRegex, valueTest){
-  const seen = new Set();
-  function walk(o){
-    if (!o || typeof o !== 'object' || seen.has(o)) return null;
-    seen.add(o);
-    for (const [k,v] of Object.entries(o)){
-      if (keyRegex.test(k) && typeof v === 'string'){
-        const t = v.trim();
-        if (!valueTest || valueTest(t)) return t;
-      }
-      if (typeof v === 'object'){
-        const r = walk(v);
-        if (r) return r;
-      }
+
+  function fmtScore(v){
+    if(v==null || v==="") return "—";
+    if(typeof v==="number") return (Math.round(v*10)/10).toString();
+    const n = Number(v);
+    if(Number.isFinite(n)) return fmtScore(n);
+    return String(v);
+  }
+
+  function fmtTimeSec(sec){
+    if(!sec && sec!==0) return "—";
+    const s = Math.max(0, Math.round(sec));
+    const m = Math.floor(s/60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2,"0")} (${s} sec)`;
+  }
+
+  function setText(id, val){
+    const el = $(id);
+    if(!el) return;
+    el.textContent = (val==null || val==="") ? "—" : String(val);
+  }
+
+  function setGauge(cefrRaw){
+    const marker = $("gaugeMarker");
+    const levelText = $("cefrLevelText");
+    const detailText = $("cefrLevelDetail");
+    let code = (cefrRaw || "").toString().toUpperCase().trim();
+
+    if(!code || !LEVELS.includes(code)) code = "B1"; // neutral default
+
+    const idx = LEVELS.indexOf(code);
+    const pct = (idx + 0.5) / LEVELS.length * 100;
+    marker.style.left = pct + "%";
+    levelText.textContent = code;
+    detailText.textContent = code;
+    $("cefrVal").textContent = code;
+  }
+
+  function applyTranscript(text){
+    const btn = $("btnTranscript");
+    const box = $("transcriptText");
+    const hint = $("transcriptHint");
+
+    if(!text){
+      hint.textContent = "Transcript not available for this response.";
+      btn.style.display = "none";
+      box.style.display = "none";
+      return;
     }
-    return null;
+
+    let visible = false;
+    const clean = String(text).trim();
+    const update = ()=>{
+      if(visible){
+        box.style.display = "block";
+        box.textContent = clean;
+        btn.textContent = "Hide transcript";
+        hint.textContent = "";
+      }else{
+        box.style.display = "none";
+        box.textContent = "";
+        btn.textContent = "Show transcript";
+        hint.textContent = "Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.";
+      }
+    };
+    btn.onclick = ()=>{ visible = !visible; update(); };
+    update();
   }
-  return walk(obj);
-}
 
-/* ---------- CEFR helpers ---------- */
-const CEFR_ORDER = ['A1','A2','B1','B2','C1','C2'];
-function normalizeCefrLabel(raw){
-  if (!raw) return null;
-  const t = String(raw).trim().toUpperCase();
-  const m = t.match(/(A1|A2|B1|B2|C1|C2)/);
-  return m ? m[1] : null;
-}
-function setGauge(label){
-  const cefr = normalizeCefrLabel(label);
-  const pointer = $('gaugePointer');
-  const summary = $('cefrSummary');
-  if (!cefr){
-    summary.textContent = '—';
-    pointer.style.setProperty('--gauge-angle','0deg');
-    return;
-  }
-  summary.textContent = cefr;
-  const idx = CEFR_ORDER.indexOf(cefr);
-  const start = -110, end = 110;
-  const step = (end-start)/(CEFR_ORDER.length-1);
-  const angle = start + step * (idx < 0 ? 2.5 : idx);
-  pointer.style.setProperty('--gauge-angle', angle + 'deg');
-}
+  function applyMSS(payload){
+    if(!payload) return;
+    console.log("[Dashboard] payload:", payload);
 
-/* ---------- formatting ---------- */
-function fmtScore(v){
-  if (v == null || isNaN(v)) return '—';
-  if (Math.abs(v - Math.round(v)) < 0.01) return String(Math.round(v));
-  return String(Math.round(v*10)/10);
-}
-function fmtTimeSeconds(sec){
-  if (!sec || !isFinite(sec)) return '—';
-  const s = Math.max(0, Math.round(sec));
-  const m = Math.floor(s/60);
-  const r = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
-}
+    const meta   = payload.meta || {};
+    const widget = meta.widget || {};
+    const result = payload.result || payload.elsa_results || payload;
 
-/* ---------- main apply ---------- */
-function applyMSS(payloadRaw){
-  const now = new Date();
-  $('loadedAt').textContent = now.toLocaleString();
+    // time
+    $("loadedAt").textContent = new Date().toLocaleString();
 
-  // unwrap a few common shapes
-  const payload = payloadRaw || {};
-  const result = payload.result || payload.response || payload.elsa_results || payload;
-  const meta = payload.meta || payload.widgetMeta || payload.logger || {};
+    const questionText =
+      meta.question ||
+      widget.question ||
+      pick(result,["question","prompt","item.text"],"—");
+    setText("qText", questionText);
+    setText("questionMeta", questionText);
 
-  // scores – try a few places + deep-search
-  const toefl = deepFindNumber(result, /toefl/i);
-  const ielts = deepFindNumber(result, /ielts/i);
-  const pte   = deepFindNumber(result, /\bpte\b/i);
-  const cefrLabel =
-    normalizeCefrLabel(result.cefr || result.cefr_level || result.cefrLabel) ||
-    deepFindString(result, /cefr/i, t=>!!normalizeCefrLabel(t));
+    // main scores (very forgiving – try several shapes)
+    const toefl = pick(result,["toefl","scores.toefl","mapped_scores.toefl"]);
+    const ielts = pick(result,["ielts","scores.ielts","mapped_scores.ielts"]);
+    const pte   = pick(result,["pte","scores.pte","mapped_scores.pte"]);
+    const cefr  = pick(result,["cefr_level","cefr_band","cefr","cefr.value"]);
 
-  $('scoreToefl').textContent = fmtScore(toefl);
-  $('scoreIelts').textContent = fmtScore(ielts);
-  $('scorePte').textContent   = fmtScore(pte);
-  $('scoreCefr').textContent  = cefrLabel || '—';
-  setGauge(cefrLabel);
+    setText("toeflVal", fmtScore(toefl));
+    setText("ieltsVal", fmtScore(ielts));
+    setText("pteVal",   fmtScore(pte));
+    setGauge(cefr);
 
-  // question text
-  const q =
-    meta.questionText || meta.prompt || result.question ||
-    deepFindString(result, /question/i) || '—';
-  $('qText').textContent = q;
+    // audio length / meta
+    const lengthSec =
+      widget.recorded_seconds ??
+      meta.recorded_seconds ??
+      pick(result,["audio_seconds","duration_seconds"]);
+    $("audioLength").textContent = fmtTimeSec(lengthSec);
 
-  // meta: audio length & wpm
-  const audioSec = meta.audioSeconds || meta.lengthSeconds || meta.duration_seconds || meta.duration;
-  $('metaAudio').textContent = fmtTimeSeconds(audioSec);
+    const wpm =
+      widget.wpm ??
+      meta.wpm ??
+      pick(result,["wpm","words_per_minute","speech_rate"]);
+    setText("wpmVal", fmtScore(wpm));
 
-  const wpm = meta.wordsPerMinute || meta.wpm || meta.words_per_minute;
-  $('metaWpm').textContent = wpm && isFinite(wpm) ? Math.round(wpm) + ' wpm' : '—';
+    const subType =
+      widget.submissionType ||
+      meta.submissionType ||
+      "Widget";
+    setText("submissionType", subType);
 
-  $('metaQuestion').textContent = q;
-  $('metaSource').textContent = meta.source || meta.origin || 'Widget';
+    // transcript (multiple possible fields)
+    const transcript =
+      payload.transcript_clean ||
+      payload.transcript ||
+      meta.transcript ||
+      pick(result,["transcript","full_transcript","asr.text"]);
+    applyTranscript(transcript);
 
-  // transcript (plain text)
-  const transcript =
-    meta.transcript_plain || meta.transcript ||
-    result.transcript_plain || result.transcript || '';
-  const box = $('transcriptBox');
-  const toggle = $('toggleTranscript');
-  if (transcript && transcript.trim()){
-    box.textContent = transcript.replace(/\r\n/g,'\n');
-    box.style.display = 'none';
-    toggle.disabled = false;
-    toggle.textContent = 'Show transcript';
-  }else{
-    box.textContent = 'Transcript not available.';
-    box.style.display = 'block';
-    toggle.disabled = true;
-    toggle.textContent = 'Transcript unavailable';
-  }
-}
-
-/* ---------- transcript toggle ---------- */
-function setupTranscriptToggle(){
-  const box = $('transcriptBox');
-  const btn = $('toggleTranscript');
-  btn.addEventListener('click', ()=>{
-    const showing = box.style.display !== 'none';
-    if (showing){
-      box.style.display = 'none';
-      btn.textContent = 'Show transcript';
+    // demo / error note
+    const noteEl = $("mssNote");
+    const isDemo = !!widget.demo;
+    if(isDemo){
+      const msg = widget.errorMessage ||
+        "These are demo values only because the MSS API request failed.";
+      noteEl.textContent = msg;
+      noteEl.style.display = "block";
     }else{
-      box.style.display = 'block';
-      btn.textContent = 'Hide transcript';
+      const msg = widget.errorMessage;
+      if(msg){
+        noteEl.textContent = msg;
+        noteEl.style.display = "block";
+      }else{
+        noteEl.textContent = "";
+        noteEl.style.display = "none";
+      }
     }
-  });
-}
-
-/* ---------- close helpers ---------- */
-function closeSelf(){
-  try{
-    window.close();
-  }catch(e){
-    // fallback: hide frame
-    const shell = document.querySelector('.shell');
-    if (shell) shell.style.display='none';
   }
-}
 
-/* ---------- payload from hash (debug / direct open) ---------- */
-function parseHashPayload(){
-  if (!location.hash) return null;
-  const raw = decodeURIComponent(location.hash.slice(1));
-  try{ return JSON.parse(raw); }catch(e){ return null; }
-}
+  function closeDashboard(){
+    try{
+      if(window.parent && window.parent !== window){
+        window.parent.postMessage({ type:"mss:dashClose" },"*");
+        window.parent.postMessage("mss:dashClose","*");
+        window.parent.postMessage("mss:close","*");
+      }else{
+        window.close();
+      }
+    }catch(e){
+      window.close();
+    }
+  }
 
-/* ---------- boot ---------- */
-function boot(){
-  $('closeTop').addEventListener('click', closeSelf);
-  $('closeRight').addEventListener('click', closeSelf);
-  setupTranscriptToggle();
-
-  const fromHash = parseHashPayload();
-  if (fromHash) applyMSS(fromHash);
-
-  window.addEventListener('message', (ev)=>{
+  // receive from Widget
+  window.addEventListener("message",(ev)=>{
     const d = ev.data;
-    if (!d) return;
-    if (d.type === 'mss:result' || d.type === 'mss-result' || d.type === 'mssScore'){
-      console.log("📦 Dashboard received message:", JSON.stringify(d, null, 2));
+    if(!d) return;
+    if(d.type === "mss:result" || d.type === "mss-result" || d.type === "mssScore"){
       applyMSS(d.payload || d.result || d);
-    }else if (d.result || d.meta || d.elsa_results){
-      // generic fallback – treat whole message as payload
+    }else if(d.result || d.meta || d.elsa_results){
       applyMSS(d);
     }
   });
-}
 
-window.addEventListener('DOMContentLoaded', boot);
+  // let parent know we're ready (Widget can respond with data)
+  try{
+    if(window.parent && window.parent !== window){
+      window.parent.postMessage({ type:"mss:dashReady" },"*");
+    }
+  }catch(e){}
+
+  // If someone set window.mssLast (debug / direct open), use it
+  if(window.mssLast){
+    applyMSS(window.mssLast);
+  }
+
+  $("btnCloseTop").onclick = closeDashboard;
+  $("btnCloseSmall").onclick = closeDashboard;
 </script>
 </body>
 </html>
