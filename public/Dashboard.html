@@ -1,481 +1,571 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>MSS Score Results</title>
-  <style>
-    :root{
-      --bg:#f3f4f6; --card:#fff; --edge:#e5e7eb; --text:#111827; --muted:#6b7280;
-      --accent:#1d4ed8; --accent-soft:#eff6ff; --cefr-a:#10b981; --cefr-b:#f59e0b; --cefr-c:#ef4444;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    body{display:flex;flex-direction:column;min-height:100vh}
+<meta charset="UTF-8">
+<title>MSS Score Results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --bg:#f3f4f6;
+    --card:#ffffff;
+    --edge:#e5e7eb;
+    --muted:#6b7280;
+    --text:#111827;
+    --accent:#2563eb;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    font-family:-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  body{
+    padding:16px;
+  }
 
-    /* ===== SECTION 1: SHELL / MODAL FRAME ===== */
-    .shell{
-      max-width:1080px;margin:16px auto;padding:0 12px 24px;
-    }
-    .topbar{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:10px 6px 16px;font-weight:700;font-size:14px;
-    }
-    .topbar-title{font-size:14px}
-    .topbar-btn{
-      border-radius:999px;border:1px solid var(--edge);background:#fff;padding:8px 16px;
-      font-size:13px;font-weight:600;cursor:pointer;
-    }
+  /* outer shell */
+  .shell{
+    max-width:1120px;
+    margin:0 auto;
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:0 24px 60px rgba(15,23,42,.12);
+    border:1px solid var(--edge);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    min-height:560px;
+  }
 
-    /* ===== SECTION 2: MAIN CARD ===== */
-    .card{
-      background:var(--card);border-radius:18px;border:1px solid var(--edge);
-      box-shadow:0 16px 35px rgba(15,23,42,.08);overflow:hidden;
-    }
-    .card-head{
-      padding:14px 18px;border-bottom:1px solid var(--edge);display:flex;align-items:center;gap:8px;
-    }
-    .card-title{font-weight:800;font-size:15px}
-    .pill-small{
-      margin-left:auto;font-size:11px;text-transform:uppercase;letter-spacing:.08em;
-      border-radius:999px;padding:4px 10px;border:1px solid var(--edge);background:#f9fafb;color:var(--muted);
-    }
-    .meta-row{
-      padding:0 18px 10px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:10px;
-      border-bottom:1px solid var(--edge);
-    }
-    .meta-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topbar{
+    padding:12px 18px;
+    border-bottom:1px solid var(--edge);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .topTitle{font-weight:700;}
+  .topRight{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+  .chip{
+    border-radius:999px;
+    border:1px solid var(--edge);
+    padding:4px 10px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .btnClose{
+    border-radius:999px;
+    border:1px solid var(--edge);
+    background:#f9fafb;
+    padding:8px 16px;
+    font-weight:600;
+    cursor:pointer;
+  }
 
-    .card-body{padding:18px;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2.4fr);gap:18px;}
-    @media (max-width:880px){
-      .card-body{grid-template-columns:1fr;}
-    }
+  .main{
+    padding:18px;
+    display:grid;
+    grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr);
+    gap:16px;
+  }
+  @media (max-width:880px){
+    .main{ grid-template-columns:1fr; }
+  }
 
-    /* ===== SECTION 3: LEFT – SCORE OVERVIEW & TRANSCRIPT ===== */
-    .section-label{
-      font-size:12px;font-weight:700;margin-bottom:2px;
-    }
-    .section-caption{font-size:11px;color:var(--muted);margin-bottom:10px;}
-    .score-grid{
-      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px;
-    }
-    @media (max-width:640px){
-      .score-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-    }
-    .score-card{
-      border-radius:14px;border:1px solid var(--edge);background:#f9fafb;padding:10px 12px;
-      display:flex;flex-direction:column;gap:4px;min-height:70px;
-    }
-    .score-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;}
-    .score-main{font-size:20px;font-weight:800;}
-    .score-tag{
-      margin-top:2px;align-self:flex-start;font-size:11px;padding:2px 8px;border-radius:999px;
-      background:var(--accent-soft);color:var(--accent);font-weight:600;
-    }
-    .score-empty{color:#9ca3af;}
+  .cardInner{
+    border-radius:14px;
+    border:1px solid var(--edge);
+    background:#f9fafb;
+    padding:14px 16px 16px;
+  }
+  .cardTitle{
+    font-weight:600;
+    margin-bottom:4px;
+    font-size:14px;
+  }
+  .cardSub{
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
 
-    /* transcript box */
-    .transcript-card{
-      border-radius:14px;border:1px solid var(--edge);padding:10px 12px;margin-top:4px;
-      background:#f9fafb;
-    }
-    .transcript-header{
-      display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;
-    }
-    .transcript-body{
-      font-size:13px;line-height:1.5;color:#111827;max-height:260px;overflow:auto;
-      white-space:pre-wrap;
-    }
-    .transcript-placeholder{color:var(--muted);font-size:12px;}
-    .btn-ghost{
-      border-radius:999px;border:1px solid var(--edge);background:#fff;padding:6px 10px;
-      font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;
-    }
+  /* little meta row above scores */
+  .metaRow{
+    font-size:11px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:6px 0 2px;
+    border-bottom:1px solid var(--edge);
+    margin-bottom:10px;
+  }
 
-    /* ===== SECTION 4: RIGHT – CEFR GAUGE + DETAIL STATS ===== */
-    .gauge-wrap{
-      border-radius:16px;border:1px solid var(--edge);padding:14px 14px 16px;background:#f9fafb;
-      display:flex;flex-direction:column;gap:12px;align-items:stretch;justify-content:flex-start;
-    }
-    .gauge-shell{
-      position:relative;width:100%;max-width:300px;margin:0 auto;
-      padding-top:50%; /* 2:1 aspect */
-    }
-    .gauge{
-      position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;
-    }
-    .gauge-arc{
-      position:absolute;left:4%;right:4%;bottom:12%;height:0;border-radius:300px 300px 0 0/100% 100% 0 0;
-      border-top:18px solid #e5e7eb;border-left:18px solid transparent;border-right:18px solid transparent;
-    }
-    .gauge-bands{
-      position:absolute;left:9%;right:9%;bottom:9%;height:0;display:flex;justify-content:space-between;
-    }
-    .band{
-      flex:1;height:0;border-top:10px solid #e5e7eb;border-left:3px solid transparent;border-right:3px solid transparent;
-      border-radius:999px 999px 0 0;margin:0 1px;opacity:.8;transition:border-color .2s,opacity .2s;
-    }
-    .band-a{border-top-color:var(--cefr-a);}
-    .band-b{border-top-color:var(--cefr-b);}
-    .band-c{border-top-color:var(--cefr-c);}
-    .band.off{opacity:.25;border-top-color:#e5e7eb;}
+  /* score tiles */
+  .scoresGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .tile{
+    background:#fff;
+    border-radius:12px;
+    border:1px solid var(--edge);
+    padding:10px 12px;
+  }
+  .tileLabel{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .tileValue{
+    font-size:22px;
+    font-weight:700;
+  }
+  .tileBadge{
+    margin-top:4px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:11px;
+    background:#eff6ff;
+    color:#1d4ed8;
+  }
 
-    .gauge-needle{
-      position:absolute;left:50%;bottom:9%;width:0;height:0;
-      border-left:3px solid transparent;border-right:3px solid transparent;border-top:60px solid #111827;
-      transform-origin:50% 100%;transform:translateX(-50%) rotate(-90deg);transition:transform .6s cubic-bezier(.22,.7,.17,1.02);
-    }
-    .gauge-center{
-      position:absolute;left:50%;bottom:6%;transform:translate(-50%,0);
-      background:#fff;border-radius:999px;border:1px solid var(--edge);
-      padding:6px 10px;box-shadow:0 6px 18px rgba(15,23,42,.29);
-      text-align:center;font-size:11px;min-width:70px;
-    }
-    .gauge-center-main{font-size:18px;font-weight:800;}
-    .gauge-labels{
-      position:absolute;left:5%;right:5%;bottom:-2px;font-size:11px;color:var(--muted);
-      display:flex;justify-content:space-between;
-    }
+  /* transcript card */
+  .transcriptCard{
+    margin-top:4px;
+  }
+  .transcriptBody{
+    margin-top:6px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:#fff;
+    border:1px solid var(--edge);
+    font-size:13px;
+    line-height:1.45;
+    max-height:220px;
+    overflow:auto;
+    white-space:pre-wrap;
+  }
+  .transcriptHint{
+    font-size:11px;
+    color:var(--muted);
+  }
+  .btnSmall{
+    border-radius:999px;
+    border:1px solid var(--edge);
+    background:#fff;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+  }
 
-    .detail-table{
-      font-size:12px;color:var(--muted);border-top:1px dashed #d1d5db;padding-top:10px;margin-top:4px;
-    }
-    .detail-row{display:flex;justify-content:space-between;margin-bottom:4px;}
-    .detail-row span:last-child{color:#111827;}
+  /* RIGHT: gauge dashboard */
+  .dashHeaderRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .dashHeaderRow h3{
+    margin:0;
+    font-size:14px;
+  }
+  .dashHeaderRow .time{
+    font-size:11px;
+    color:var(--muted);
+  }
 
-    .footnote{
-      margin-top:6px;font-size:11px;color:var(--muted);line-height:1.4;
-    }
+  .gaugeWrap{
+    background:#fff;
+    border-radius:14px;
+    border:1px solid var(--edge);
+    padding:16px 14px 12px;
+    margin-bottom:10px;
+  }
 
-    .hidden{display:none!important;}
-  </style>
+  .gaugeTitleRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:12px;
+    margin-bottom:8px;
+  }
+  .gaugeTitleRow .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+  }
+  .gaugeTitleRow .level{
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .gauge{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    margin:0 auto;
+    aspect-ratio: 2 / 1;
+  }
+  .gaugeArc{
+    position:absolute;
+    inset:0;
+    border-radius:999px 999px 0 0;
+    background:conic-gradient(
+      from 180deg,
+      #f97373 0deg,
+      #fbbf24 60deg,
+      #22c55e 135deg,
+      #0ea5e9 180deg
+    );
+    mask: radial-gradient(farthest-side at 50% 100%, transparent 56%, #000 57%);
+  }
+  .gaugeNeedle{
+    position:absolute;
+    bottom:8%;
+    left:50%;
+    width:40%;
+    height:5px;
+    border-radius:999px;
+    background:#111827;
+    transform-origin:0% 50%;
+    transform:rotate(var(--g-angle,-90deg));
+    transition:transform .6s ease-out;
+  }
+  .gaugeNeedle::before{
+    content:"";
+    position:absolute;
+    right:-4px;
+    top:50%;
+    width:12px;
+    height:12px;
+    margin-top:-6px;
+    border-radius:999px;
+    background:#111827;
+  }
+  .gaugeScale{
+    display:flex;
+    justify-content:space-between;
+    margin-top:6px;
+    font-size:12px;
+    color:#4b5563;
+    padding:0 6px;
+  }
+  .gaugeDot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#22c55e;
+    margin-right:6px;
+  }
+  .gaugeLegend{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .gaugeLegend strong{
+    color:#111827;
+  }
+
+  /* small metrics on right bottom */
+  .metricsGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .mCard{
+    background:#fff;
+    border-radius:12px;
+    border:1px solid var(--edge);
+    padding:10px 12px;
+    font-size:12px;
+  }
+  .mLabel{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:2px;
+  }
+  .mValue{
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  .mHint{
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .footerNote{
+    margin-top:12px;
+    font-size:11px;
+    color:var(--muted);
+  }
+</style>
 </head>
 <body>
-<div class="shell">
 
-  <!-- ===== SECTION A: TOPBAR ===== -->
+<div class="shell">
   <div class="topbar">
-    <div class="topbar-title">MSS Score Results</div>
-    <button class="topbar-btn" type="button" id="closeBtn">Close</button>
+    <div class="topTitle">MSS Score Results</div>
+    <div class="topRight">
+      <span id="topBadge" class="chip">LATEST SUBMISSION</span>
+      <button class="btnClose" type="button" onclick="window.close()">Close</button>
+    </div>
   </div>
 
-  <!-- ===== SECTION B: MAIN CARD ===== -->
-  <div class="card">
-    <div class="card-head">
-      <div class="card-title">MSS Score Results</div>
-      <div class="pill-small" id="metaLabel">LATEST SUBMISSION</div>
-    </div>
-    <div class="meta-row">
-      <span id="metaQuestion">Question: —</span>
-      <span id="metaWhen">Loaded: —</span>
-    </div>
+  <div class="main">
+    <!-- LEFT: overview + transcript -->
+    <section>
+      <div class="cardInner">
+        <div class="cardTitle">MSS Score Results</div>
+        <div class="cardSub" id="metaQuestion">Question: —</div>
 
-    <div class="card-body">
-      <!-- LEFT COLUMN -->
-      <div>
-        <div class="section-label">Score overview</div>
-        <div class="section-caption">Approximate scores mapped from your MSS evaluation.</div>
+        <div class="metaRow">
+          <div>Score overview · Approximate scores mapped from your MSS evaluation.</div>
+          <div id="metaLoaded">Loaded: —</div>
+        </div>
 
-        <!-- SCORE GRID -->
-        <div class="score-grid">
-          <div class="score-card" id="cardToefl">
-            <div class="score-label">TOEFL</div>
-            <div class="score-main" id="toeflScore" data-empty="1">—</div>
+        <div class="scoresGrid">
+          <div class="tile">
+            <div class="tileLabel">TOEFL</div>
+            <div id="scoreToefl" class="tileValue">—</div>
           </div>
-          <div class="score-card" id="cardIelts">
-            <div class="score-label">IELTS</div>
-            <div class="score-main" id="ieltsScore" data-empty="1">—</div>
+          <div class="tile">
+            <div class="tileLabel">IELTS</div>
+            <div id="scoreIelts" class="tileValue">—</div>
           </div>
-          <div class="score-card" id="cardPte">
-            <div class="score-label">PTE</div>
-            <div class="score-main" id="pteScore" data-empty="1">—</div>
+          <div class="tile">
+            <div class="tileLabel">PTE</div>
+            <div id="scorePte" class="tileValue">—</div>
           </div>
-          <div class="score-card" id="cardCefr">
-            <div class="score-label">CEFR</div>
-            <div class="score-main" id="cefrScore" data-empty="1">—</div>
-            <div class="score-tag hidden" id="cefrTag">level</div>
+          <div class="tile">
+            <div class="tileLabel">CEFR</div>
+            <div id="scoreCefr" class="tileValue">—</div>
+            <div id="scoreCefrBadge" class="tileBadge" style="display:none;">
+              <span id="scoreCefrBadgeText">C2 level</span>
+            </div>
           </div>
         </div>
 
-        <!-- Transcript -->
-        <div class="transcript-card">
-          <div class="transcript-header">
+        <div class="transcriptCard">
+          <div class="cardTitle" style="font-size:13px;margin-bottom:4px;">Transcript</div>
+          <div class="transcriptHint">
+            Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.
+          </div>
+          <div style="margin-top:8px;display:flex;justify-content:flex-start;">
+            <button id="btnToggleTranscript" class="btnSmall" type="button">Show transcript</button>
+          </div>
+          <div id="transcriptBody" class="transcriptBody" style="display:none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: gauge dashboard -->
+    <section>
+      <div class="cardInner">
+        <div class="dashHeaderRow">
+          <h3>MSS Skill Dashboard</h3>
+          <div class="time" id="metaTimeShort">—</div>
+        </div>
+
+        <div class="gaugeWrap">
+          <div class="gaugeTitleRow">
             <div>
-              <div class="section-label" style="margin-bottom:0;">Transcript</div>
-              <div class="section-caption" style="margin-bottom:0;">Click “Show transcript” to reveal the full text.</div>
+              <div class="label">CEFR overview</div>
+              <div class="level">Estimate based on this response.</div>
             </div>
-            <button class="btn-ghost" type="button" id="toggleTranscriptBtn">Show transcript</button>
-          </div>
-          <div id="transcriptPlaceholder" class="transcript-placeholder">
-            Transcript is hidden for privacy.
-          </div>
-          <div id="transcriptBody" class="transcript-body hidden"></div>
-        </div>
-      </div>
-
-      <!-- RIGHT COLUMN -->
-      <div>
-        <div class="section-label">Speaking profile</div>
-        <div class="section-caption">CEFR estimate and basic answer details.</div>
-
-        <div class="gauge-wrap">
-          <!-- GAUGE -->
-          <div class="gauge-shell">
-            <div class="gauge">
-              <div class="gauge-arc"></div>
-              <div class="gauge-bands">
-                <div class="band band-a" data-level="A1"></div>
-                <div class="band band-a" data-level="A2"></div>
-                <div class="band band-b" data-level="B1"></div>
-                <div class="band band-b" data-level="B2"></div>
-                <div class="band band-c" data-level="C1"></div>
-                <div class="band band-c" data-level="C2"></div>
-              </div>
-              <div class="gauge-needle" id="needle"></div>
-              <div class="gauge-center">
-                <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;">CEFR</div>
-                <div class="gauge-center-main" id="gaugeMain">—</div>
-              </div>
-              <div class="gauge-labels">
-                <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
-              </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">CEFR LEVEL</div>
+              <div id="gaugeCefrLabel" style="font-size:20px;font-weight:700;">–</div>
             </div>
           </div>
 
-          <!-- Detail table -->
-          <div class="detail-table">
-            <div class="detail-row"><span>Audio length</span><span id="detailLength">—</span></div>
-            <div class="detail-row"><span>Words per minute</span><span id="detailWpm">—</span></div>
-            <div class="detail-row"><span>Question</span><span id="detailQuestion">—</span></div>
+          <div class="gauge">
+            <div class="gaugeArc"></div>
+            <div id="gaugeNeedle" class="gaugeNeedle"></div>
+          </div>
+          <div class="gaugeScale">
+            <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
           </div>
 
-          <div class="footnote">
-            These values are approximate and intended for formative feedback, not as certified scores.
+          <div class="gaugeLegend">
+            <span class="gaugeDot"></span>
+            <span>Estimated CEFR level: <strong id="gaugeCefrText">–</strong></span>
           </div>
         </div>
+
+        <div class="metricsGrid">
+          <div class="mCard">
+            <div class="mLabel">Audio length</div>
+            <div id="metricLength" class="mValue">—</div>
+            <div class="mHint">From widget meta data.</div>
+          </div>
+          <div class="mCard">
+            <div class="mLabel">Words per minute</div>
+            <div id="metricWpm" class="mValue">—</div>
+            <div class="mHint">If provided by MSS API.</div>
+          </div>
+          <div class="mCard">
+            <div class="mLabel">Question</div>
+            <div id="metricQuestionShort" class="mValue" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+            <div class="mHint">Prompt used for this response.</div>
+          </div>
+          <div class="mCard">
+            <div class="mLabel">Submission type</div>
+            <div id="metricSource" class="mValue">Widget</div>
+            <div class="mHint">Recorded or uploaded via MSS Widget.</div>
+          </div>
+        </div>
+
+        <div class="footerNote">
+          These values are approximate and intended for formative feedback, not as certified scores.
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </div>
 
 <script>
-/* ===== SECTION JS-1: SMALL HELPERS ===== */
-const $  = (id)=>document.getElementById(id);
-const $$ = (sel)=>Array.from(document.querySelectorAll(sel));
-const CEFR_ORDER = ['A1','A2','B1','B2','C1','C2'];
-const STORAGE_KEY = 'mss-dashboard-last-payload';
+  const $ = (id) => document.getElementById(id);
 
-function stripHtml(html){
-  if (!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
-}
-function formatLength(sec){
-  if (!sec && sec !== 0) return '—';
-  const s = Math.max(0, Math.round(sec));
-  const m = Math.floor(s/60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2,'0')} min`;
-}
-function rotateNeedleForIndex(i){
-  const idx = Math.max(0, Math.min(CEFR_ORDER.length-1, i|0));
-  const deg = -90 + (idx/(CEFR_ORDER.length-1))*180; // -90..+90
-  const n = $('needle');
-  if (!n) return;
-  n.style.transform = `translateX(-50%) rotate(${deg}deg)`;
-}
-
-/* ===== SECTION JS-2: NORMALISE MSS PAYLOAD ===== */
-function normalisePayload(raw){
-  if (!raw) return {};
-
-  let root = raw;
-  if (root.payload) root = root.payload;
-  if (root.result)  root = root.result;
-  if (root.body)    root = root.body;
-  if (root.data && !('toefl' in root) && !('toefl_score' in root)) root = root.data;
-
-  const scoresSource =
-    root.elsa_results ||
-    root.scores ||
-    root.scorecard ||
-    root;
-
-  const pick = (obj, a,b)=> obj && (obj[a] ?? obj[b] ?? null);
-
-  const toefl = pick(scoresSource,'toefl','toefl_score');
-  const ielts = pick(scoresSource,'ielts','ielts_score');
-  const pte   = pick(scoresSource,'pte','pte_score');
-  const cefr  = (scoresSource.cefr_level || scoresSource.cefr || '').toUpperCase() || null;
-
-  const transcriptHtml =
-    raw.transcriptHtml ||
-    root.transcript_html ||
-    root.transcriptHtml ||
-    root.transcript ||
-    '';
-
-  const transcript = stripHtml(transcriptHtml);
-
-  const meta = raw.meta || root.meta || {};
-  const loggerMeta = raw.loggerMeta || {};
-
-  const lengthSec =
-    loggerMeta.lengthSec ??
-    meta.lengthSec ??
-    root.audio_length_seconds ??
-    null;
-
-  const wpm =
-    loggerMeta.wpm ??
-    meta.wordsPerMinute ??
-    null;
-
-  const question =
-    loggerMeta.question ??
-    meta.question ??
-    raw.question ??
-    '';
-
-  return { toefl, ielts, pte, cefr, transcript, lengthSec, wpm, question };
-}
-
-/* ===== SECTION JS-3: APPLY TO UI ===== */
-function applyToUI(raw){
-  const data = normalisePayload(raw);
-
-  // scores
-  function setScore(id, val){
+  function safeText(id, value){
     const el = $(id);
-    if (!el) return;
-    if (val === null || val === undefined || val === ''){
-      el.textContent = '—';
-      el.dataset.empty = '1';
-      el.classList.add('score-empty');
-    } else {
-      el.textContent = typeof val === 'number' ? String(val) : String(val);
-      el.dataset.empty = '0';
-      el.classList.remove('score-empty');
+    if (el && value != null && value !== "") el.textContent = value;
+  }
+
+  function parsePayload(){
+    try{
+      const hash = location.hash.slice(1);
+      if (!hash) return null;
+      const jsonStr = decodeURIComponent(hash);
+      const decoded = atob(jsonStr);
+      return JSON.parse(decoded);
+    }catch(e){
+      console.warn("Payload parse error", e);
+      return null;
     }
   }
-  setScore('toeflScore', data.toefl);
-  setScore('ieltsScore', data.ielts);
-  setScore('pteScore',   data.pte);
 
-  // CEFR
-  const cefr = data.cefr || '—';
-  $('cefrScore').textContent = cefr;
-  if (data.cefr){
-    $('cefrTag').classList.remove('hidden');
-    $('cefrTag').textContent = `${data.cefr} level`;
-  }else{
-    $('cefrTag').classList.add('hidden');
+  function formatTime(iso){
+    if (!iso) return "—";
+    try{
+      const d = new Date(iso);
+      return d.toLocaleString(undefined,{year:"numeric",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+    }catch{ return "—"; }
   }
 
-  const idx = CEFR_ORDER.indexOf(data.cefr||'');
-  rotateNeedleForIndex(idx === -1 ? 2 : idx); // default around B1 if missing
-  $('gaugeMain').textContent = data.cefr || '—';
-
-  // transcript (kept hidden until user asks)
-  $('transcriptBody').textContent = data.transcript || '';
-  $('transcriptPlaceholder').textContent = data.transcript ? 'Transcript is hidden for privacy.' : 'Transcript not available.';
-
-  // details
-  $('detailLength').textContent = formatLength(data.lengthSec);
-  $('detailWpm').textContent = data.wpm ? String(Math.round(data.wpm)) : '—';
-  $('detailQuestion').textContent = data.question || '—';
-
-  // meta labels
-  $('metaQuestion').textContent = data.question ? `Question: ${data.question}` : 'Question: —';
-  $('metaWhen').textContent = 'Loaded: ' + new Date().toLocaleString();
-}
-
-/* ===== SECTION JS-4: MESSAGE / STORAGE WIRING ===== */
-function loadFromStorage(){
-  try{
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    applyToUI(parsed);
-  }catch(e){
-    console.warn('Dashboard: storage read failed', e);
+  function formatLength(sec){
+    if (!sec || !isFinite(sec)) return "—";
+    const s = Math.round(sec);
+    const m = Math.floor(s/60);
+    const r = s%60;
+    return `${m}:${String(r).padStart(2,"0")} min`;
   }
-}
-function saveToStorage(payload){
-  try{ sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }catch{}
-}
 
-function handleIncomingMessage(msg){
-  if (!msg) return;
-  let payload = null;
+  function updateGauge(cefr){
+    const map = ["A1","A2","B1","B2","C1","C2"];
+    const level = (cefr || "").toString().toUpperCase();
+    const idx = map.indexOf(level);
+    const needle = $("gaugeNeedle");
+    const label = $("gaugeCefrLabel");
+    const text  = $("gaugeCefrText");
 
-  // direct MSS payload
-  if (msg.elsa_results || msg.toefl || msg.toefl_score || msg.scores || msg.result){
-    payload = msg;
-  }
-  // envelope
-  if (msg.type && (msg.type === 'MSS_WIDGET_RESULT' || msg.type === 'mss-results' || msg.type === 'mss-dashboard')){
-    payload = msg.payload || msg.result || msg.data || payload;
-  }
-  if (!payload) return;
-
-  applyToUI(payload);
-  saveToStorage(payload);
-}
-
-window.addEventListener('message', (e)=>{
-  try{ handleIncomingMessage(e.data); }catch(err){ console.warn('Dashboard message error', err); }
-});
-
-/* ===== SECTION JS-5: BOOTSTRAP ===== */
-window.addEventListener('DOMContentLoaded', ()=>{
-  // Close button
-  $('closeBtn').addEventListener('click', ()=>{
-    try{ window.close(); }catch{}
-    try{ if (window.opener && !window.opener.closed) window.opener.focus(); }catch{}
-  });
-
-  // Transcript toggle
-  const toggleBtn = $('toggleTranscriptBtn');
-  toggleBtn.addEventListener('click', ()=>{
-    const body = $('transcriptBody');
-    const ph   = $('transcriptPlaceholder');
-    const showing = !body.classList.contains('hidden');
-    if (showing){
-      body.classList.add('hidden');
-      ph.classList.remove('hidden');
-      toggleBtn.textContent = 'Show transcript';
-    }else{
-      body.classList.remove('hidden');
-      ph.classList.add('hidden');
-      toggleBtn.textContent = 'Hide transcript';
+    if (!needle){
+      return;
     }
-  });
 
-  // 1) try sessionStorage
-  loadFromStorage();
-
-  // 2) try ?payload= in URL (mainly for debugging)
-  try{
-    const qs = new URLSearchParams(location.search);
-    const rawParam = qs.get('payload');
-    if (rawParam){
-      const decoded = JSON.parse(decodeURIComponent(rawParam));
-      applyToUI(decoded);
-      saveToStorage(decoded);
+    if (idx === -1){
+      needle.style.setProperty("--g-angle","0deg");
+      if (label) label.textContent = "–";
+      if (text)  text.textContent  = "–";
+      return;
     }
-  }catch(e){
-    console.warn('Dashboard payload param parse error', e);
+
+    const angle = -90 + idx * (180/(map.length-1)); // -90 → +90
+    needle.style.setProperty("--g-angle", angle + "deg");
+    if (label) label.textContent = level;
+    if (text)  text.textContent  = level;
   }
 
-  // 3) light ping back to opener so widget knows it can post
-  try{
-    if (window.opener){
-      window.opener.postMessage({ type:'mss-dashboard-ready' }, '*');
+  function boot(){
+    const payload = parsePayload() || {};
+    const res  = payload.result || {};
+    const meta = payload.meta   || {};
+
+    const toefl = res.toefl ?? res.toefl_score ?? "—";
+    const ielts = res.ielts ?? res.ielts_score ?? "—";
+    const pte   = res.pte   ?? res.pte_score   ?? "—";
+    const cefr  = res.cefr  ?? res.cefr_level  ?? "—";
+
+    safeText("scoreToefl", toefl);
+    safeText("scoreIelts", ielts);
+    safeText("scorePte",   pte);
+    safeText("scoreCefr",  cefr);
+
+    if (cefr && cefr !== "—"){
+      const badge = $("scoreCefrBadge");
+      const badgeText = $("scoreCefrBadgeText");
+      if (badge){ badge.style.display = "inline-flex"; }
+      if (badgeText){ badgeText.textContent = `${cefr.toString().toUpperCase()} level`; }
     }
-  }catch{}
-});
+
+    updateGauge(cefr);
+
+    const question = meta.question || res.question || "";
+    if (question){
+      $("metaQuestion").textContent = "Question: " + question;
+      $("metricQuestionShort").textContent = question;
+    }
+
+    const when = meta.savedAt || meta.timestamp || res.created_at || "";
+    $("metaLoaded").textContent = "Loaded: " + formatTime(when);
+    $("metaTimeShort").textContent = formatTime(when);
+
+    const lenSec = meta.lengthSec || res.audio_seconds || res.lengthSec;
+    $("metricLength").textContent = formatLength(lenSec);
+
+    const wpm = res.words_per_minute || res.wpm || meta.wpm;
+    if (wpm && isFinite(wpm)){
+      $("metricWpm").textContent = Math.round(wpm) + " wpm";
+    }
+
+    // transcript
+    const transcript = res.transcript || res.text || meta.transcript || "";
+    const body = $("transcriptBody");
+    if (body){
+      body.textContent = transcript || "(Transcript not available for this submission.)";
+    }
+
+    const btn = $("btnToggleTranscript");
+    if (btn && body){
+      let open = false;
+      btn.addEventListener("click", ()=>{
+        open = !open;
+        body.style.display = open ? "block" : "none";
+        btn.textContent = open ? "Hide transcript" : "Show transcript";
+      });
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", boot);
 </script>
 </body>
 </html>
