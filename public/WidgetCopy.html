@@ -5,161 +5,279 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MSS Widget</title>
 
-  <!-- Base theme (will be swapped dynamically after config load) -->
-  <link id="themeCss" rel="stylesheet" href="themes/mss-widget-default.css">
+  <!-- default theme (will be replaced after we fetch config from Render) -->
+  <link id="themeCss" rel="stylesheet" href="/themes/mss-widget-default.css">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:#f3f4f6;
+      padding:20px;
+    }
+    .mss-card {
+      max-width:720px;
+      margin:0 auto;
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 20px 40px rgba(15,23,42,.08);
+      padding:20px 22px 26px;
+    }
+    .mss-head {
+      display:flex;
+      gap:14px;
+      align-items:center;
+      margin-bottom:16px;
+    }
+    .mss-logo {
+      width:54px;
+      height:54px;
+      object-fit:contain;
+      background:#e5e7eb;
+      border-radius:14px;
+    }
+    .mss-brand {
+      font-size:1.1rem;
+      font-weight:700;
+    }
+    .mss-counter {
+      font-size:0.75rem;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:6px;
+    }
+    .mss-q {
+      font-size:1.1rem;
+      line-height:1.45;
+      margin-bottom:14px;
+    }
+    .mss-nav {
+      display:flex;
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .mss-pill {
+      border:1px solid #d1d5db;
+      background:#fff;
+      border-radius:999px;
+      padding:6px 14px;
+      cursor:pointer;
+    }
+    .mss-actions {
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      padding:14px;
+    }
+    .mss-toolbar {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+    }
+    .mss-btn {
+      background:#e5e7eb;
+      border:0;
+      border-radius:999px;
+      padding:7px 13px;
+      cursor:pointer;
+      font-size:0.85rem;
+    }
+    .mss-btn.primary {
+      background:#1d4ed8;
+      color:white;
+    }
+    .mss-recbar {
+      display:flex;
+      gap:6px;
+      align-items:center;
+      margin-top:12px;
+      justify-content:center;
+    }
+    .mss-dot {
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      background:#d1d5db;
+    }
+    .mss-dot.on {
+      background:#f43f5e;
+      box-shadow:0 0 0 6px rgba(244,63,94,.22);
+    }
+    .mss-timer {
+      font-size:0.75rem;
+      color:#6b7280;
+    }
+    .mss-file {
+      display:none;
+    }
+    .mss-filebadge {
+      font-size:0.72rem;
+      color:#6b7280;
+      margin-top:6px;
+      text-align:center;
+    }
+    .mss-line {
+      height:3px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#1d4ed8,#e5e7eb);
+      width:0%;
+      transition:width .2s ease;
+      margin-top:6px;
+    }
+    .mss-status {
+      margin-top:14px;
+      font-size:0.8rem;
+      text-align:center;
+    }
+    .mss-status.ok {
+      color:#15803d;
+    }
+    .mss-status.warn {
+      color:#b91c1c;
+    }
+    .mss-muted {
+      color:#6b7280;
+      font-size:0.8rem;
+    }
+
+    .mss-resultswrap { margin-top:12px }
+    .mss-debug { display:none; margin-top:10px }
+    .mss-debug pre { max-height:260px; overflow:auto; font-size:0.75rem; background:#111827; color:#e5e7eb; padding:8px; border-radius:8px; }
+    .mss-logstatus { font-size:12px; text-align:center; margin-top:6px; }
+    .mss-logstatus.ok { color:#16a34a; }
+    .mss-logstatus.err { color:#dc2626; }
+
+    /* Modal dashboard */
+    .mss-modal {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.45);
+      z-index:80;
+    }
+    .mss-modal .sheet {
+      width:min(960px,96vw);
+      height:min(720px,90vh);
+      background:#fff;
+      border-radius:16px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 12px 36px rgba(0,0,0,.2);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .mss-modal header {
+      display:flex;
+      align-items:center;
+      padding:10px 12px;
+      border-bottom:1px solid #e5e7eb;
+    }
+    .mss-modal header .title { font-weight:800; }
+    .mss-modal header .grow { flex:1 }
+    .mss-modal iframe {
+      flex:1;
+      border:0;
+      width:100%;
+    }
+  </style>
 
   <script>
-    /* ------------------------------------------------------------------
-       ENV / SERVICE BASE
-    ------------------------------------------------------------------ */
+    // Service base: localhost vs Render
     const SERVICE_BASE = window.location.hostname.includes('localhost')
       ? 'http://localhost:3000'
       : 'https://msswidget-dev.onrender.com';
 
-    const mode = SERVICE_BASE.includes('localhost') ? 'LOCAL DEV' : 'RENDER PROD';
-    console.log(`🧩 MSS Widget running in ${mode} mode`);
+    console.log('🧩 MSS Widget using service base:', SERVICE_BASE);
 
-    /* ------------------------------------------------------------------
-       Dynamic theme loader (Render first, local fallback)
-    ------------------------------------------------------------------ */
+    // Theme loader – pulls theme from Render config
     async function loadTheme() {
-      const ts = '?ts=' + Date.now();
-      const link = document.getElementById('themeCss');
-
-      function applyThemeFromConfig(cfg) {
-        try {
-          const t = (cfg.theme || 'default').toLowerCase();
-          const file =
-            t === 'pink'  ? 'themes/mss-widget-pink.css'  :
-            t === 'apple' ? 'themes/mss-widget-apple.css' :
-                            'themes/mss-widget-default.css';
-          link.onerror = () => link.setAttribute('href', 'themes/mss-widget-default.css');
-          link.setAttribute('href', file);
-        } catch {
-          link.setAttribute('href', 'themes/mss-widget-default.css');
-        }
-      }
-
       try {
-        // Try Render-config first
-        const r = await fetch(`${SERVICE_BASE}/config/widget${ts}`, { cache:'no-store' });
-        if (!r.ok) throw new Error('remote theme config failed: ' + r.status);
-        const cfg = await r.json();
-        applyThemeFromConfig(cfg);
-        return;
+        const res = await fetch(
+          SERVICE_BASE + '/config/widget?ts=' + Date.now(),
+          { cache: 'no-store' }
+        );
+        const cfg = res.ok ? await res.json() : {};
+        const t = (cfg.theme || 'default').toLowerCase();
+        const file =
+          t === 'pink'  ? '/themes/mss-widget-pink.css'  :
+          t === 'apple' ? '/themes/mss-widget-apple.css' :
+                          '/themes/mss-widget-default.css';
+        const link = document.getElementById('themeCss');
+        link.onerror = () => link.setAttribute('href', '/themes/mss-widget-default.css');
+        link.setAttribute('href', file);
       } catch (e) {
-        console.warn('[theme] Render config failed, trying local config.json', e);
-      }
-
-      // Local fallback
-      try {
-        const r2 = await fetch('config.json' + ts, { cache:'no-store' });
-        if (!r2.ok) throw new Error('local config.json not found');
-        const cfg2 = await r2.json();
-        applyThemeFromConfig(cfg2);
-      } catch (e2) {
-        console.warn('[theme] local config failed, using default', e2);
-        link.setAttribute('href', 'themes/mss-widget-default.css');
+        console.warn('Theme load failed; using default', e);
+        document.getElementById('themeCss').setAttribute('href', '/themes/mss-widget-default.css');
       }
     }
-
     loadTheme();
   </script>
-
-  <style>
-    /* Extra UI bits on top of the theme CSS */
-    .mss-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; }
-    .mss-file { display:none; }
-    .mss-filelabel { cursor:pointer; }
-    .mss-filebadge { font-size:12px; color:#6b7280; margin-top:4px; text-align:center }
-    .mss-line {
-      height:3px; border-radius:999px; background:linear-gradient(90deg,#1a5cff,var(--edge,#e5e7eb));
-      width:0%; transition: width .2s ease; margin:10px auto 0;
-    }
-    .mss-modal {
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.45); z-index:80;
-    }
-    .mss-modal .sheet {
-      width:min(960px,96vw); height:min(720px,90vh); background:#fff; border-radius:16px;
-      border:1px solid var(--edge,#e5e7eb); box-shadow:0 12px 36px rgba(0,0,0,.2);
-      overflow:hidden; display:flex; flex-direction:column;
-    }
-    .mss-modal header { display:flex; align-items:center; padding:10px 12px; border-bottom:1px solid var(--edge,#e5e7eb) }
-    .mss-modal header .title { font-weight:800; }
-    .mss-modal header .grow { flex:1 }
-    .mss-modal iframe { flex:1; border:0; width:100%; }
-    .mss-resultswrap { margin-top:12px }
-    .mss-debug { display:none; margin-top:10px }
-    .mss-debug pre { max-height:260px; overflow:auto }
-    .mss-logstatus { font-size:12px; text-align:center; margin-top:6px; }
-    .mss-logstatus.ok { color:#16a34a; }   /* green */
-    .mss-logstatus.err { color:#dc2626; }  /* red */
-  </style>
 </head>
 <body>
   <div class="mss-card">
     <div class="mss-head">
       <img id="logo" class="mss-logo" alt="Brand logo"/>
-      <div id="brand" class="mss-brand"></div>
+      <div>
+        <div id="brand" class="mss-brand"></div>
+        <div id="powered" class="mss-muted">Loading config…</div>
+      </div>
     </div>
 
-    <div class="mss-body">
-      <div id="counter" class="mss-counter"></div>
-      <div id="question" class="mss-q"></div>
+    <div id="counter" class="mss-counter"></div>
+    <div id="question" class="mss-q"></div>
 
-      <div class="mss-nav">
-        <button id="prevBtn" class="mss-pill">Previous</button>
-        <button id="nextBtn" class="mss-pill">Next</button>
-      </div>
-
-      <div class="mss-actions">
-        <div class="mss-toolbar">
-          <button id="recBtn"  class="mss-btn primary">Record your response</button>
-          <button id="stopBtn" class="mss-btn" disabled>Stop</button>
-
-          <label for="fileInput" class="mss-btn mss-filelabel">Choose an audio file</label>
-          <input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
-
-          <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear file</button>
-        </div>
-
-        <div class="mss-recbar">
-          <span id="recDot" class="mss-dot"></span>
-          <span id="recState" class="mss-muted">Not recording</span>
-          <span id="timer" class="mss-timer mss-muted"></span>
-        </div>
-
-        <div id="fileBadge" class="mss-filebadge"></div>
-
-        <div id="playerWrap" style="display:none; margin-top:8px; text-align:center;">
-          <audio id="player" controls preload="metadata" style="width:100%;"></audio>
-          <div class="mss-muted" id="lengthHint" style="margin-top:4px;"></div>
-        </div>
-
-        <div class="mss-row" style="margin-top:10px;">
-          <button id="submitBtn" class="mss-btn" disabled>Submit for scoring</button>
-        </div>
-
-        <div class="mss-resultswrap">
-          <div id="progressText" class="mss-muted"></div>
-          <div id="progressLine" class="mss-line"></div>
-          <!-- Logging indicator -->
-          <div id="logStatus" class="mss-logstatus"></div>
-        </div>
-      </div>
-
-      <div id="powered" class="mss-muted"></div>
-
-      <div id="debugBtnRow" style="display:none;gap:8px;justify-content:center;margin-top:6px;">
-        <button id="toggleDebug" class="mss-btn">View Debug Log</button>
-      </div>
-      <div id="debugWrap" class="mss-debug">
-        <pre id="results" class="mss-results"></pre>
-      </div>
-
-      <div id="status"  class="mss-status"></div>
+    <div class="mss-nav">
+      <button id="prevBtn" class="mss-pill">Previous</button>
+      <button id="nextBtn" class="mss-pill">Next</button>
     </div>
+
+    <div class="mss-actions">
+      <div class="mss-toolbar">
+        <button id="recBtn"  class="mss-btn primary">Record your response</button>
+        <button id="stopBtn" class="mss-btn" disabled>Stop</button>
+
+        <label for="fileInput" class="mss-btn">Choose an audio file</label>
+        <input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
+
+        <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear file</button>
+      </div>
+
+      <div class="mss-recbar">
+        <span id="recDot" class="mss-dot"></span>
+        <span id="recState" class="mss-muted">Not recording</span>
+        <span id="timer" class="mss-timer"></span>
+      </div>
+
+      <div id="fileBadge" class="mss-filebadge"></div>
+
+      <div id="playerWrap" style="display:none; margin-top:8px; text-align:center;">
+        <audio id="player" controls preload="metadata" style="width:100%;"></audio>
+        <div class="mss-muted" id="lengthHint" style="margin-top:4px;"></div>
+      </div>
+
+      <div style="margin-top:10px; text-align:center;">
+        <button id="submitBtn" class="mss-btn" disabled>Submit for scoring</button>
+      </div>
+
+      <div class="mss-resultswrap">
+        <div id="progressText" class="mss-muted"></div>
+        <div id="progressLine" class="mss-line"></div>
+        <div id="logStatus" class="mss-logstatus"></div>
+      </div>
+    </div>
+
+    <div id="debugBtnRow" style="display:none;gap:8px;justify-content:center;margin-top:6px;">
+      <button id="toggleDebug" class="mss-btn">View Debug Log</button>
+    </div>
+    <div id="debugWrap" class="mss-debug">
+      <pre id="results" class="mss-results"></pre>
+    </div>
+
+    <div id="status" class="mss-status"></div>
   </div>
 
   <!-- Dashboard modal -->
@@ -170,7 +288,7 @@
         <div class="grow"></div>
         <button id="closeDash" class="mss-btn">Close</button>
       </header>
-      <iframe id="dashFrame" src="dashboard.html"></iframe>
+      <iframe id="dashFrame" src="Dashboard.html"></iframe>
     </div>
   </div>
 
@@ -186,7 +304,9 @@ let dashboardWindow=null;
 
 /* ===== Helpers ===== */
 function mmss(ms){
-  const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60;
+  const s=Math.floor(ms/1000);
+  const m=Math.floor(s/60);
+  const r=s%60;
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
 }
 function setStatus(msg, ok=true){
@@ -195,8 +315,8 @@ function setStatus(msg, ok=true){
   el.className='mss-status ' + (ok?'ok':'warn');
 }
 function getLogoFrom(img){
-  if(!img) return '';
-  for(const k of ['logoDataUrl','dataUrl','logo','src','url','path']) {
+  if(!img)return'';
+  for(const k of ['logoDataUrl','dataUrl','logo','src','url','path']){
     if(img[k]) return String(img[k]);
   }
   return '';
@@ -228,7 +348,10 @@ function startProgress(label='Processing'){
   }, 120);
 }
 function stopProgress(finalLabel='Done'){
-  if (submitTimerId){ clearInterval(submitTimerId); submitTimerId=null; }
+  if (submitTimerId){
+    clearInterval(submitTimerId);
+    submitTimerId=null;
+  }
   const s = ((performance.now()-submitStart)/1000).toFixed(2);
   $('progressText').textContent = `${finalLabel} (${s}s)`;
   $('progressLine').style.width = '100%';
@@ -250,10 +373,9 @@ function encodeWavFromAudioBuffer(abuf){
   const w = (o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
   w(0,'RIFF'); v.setUint32(4,36+dataBytes,true); w(8,'WAVE');
   w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true);
-  w(36,'data'); v.setUint32(40,dataBytes,true);
   v.setUint16(22,chs,true); v.setUint32(24,rate,true);
   v.setUint32(28,rate*blockAlign,true); v.setUint16(32,blockAlign,true);
-  v.setUint16(34,16,true);
+  v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,dataBytes,true);
   const chData = Array.from({length:chs}, (_,i)=>abuf.getChannelData(i));
   let off=44;
   for(let i=0;i<len;i++){
@@ -277,7 +399,9 @@ async function transcodeToWav(origBlob){
 async function checkAccess(baseUrl, key){
   try{
     const url = baseUrl.replace(/\/+$/,'') + '/api/check-access';
-    const r = await fetch(url, { headers:{ 'API-KEY': key, 'Accept': 'application/json' }});
+    const r = await fetch(url, {
+      headers:{ 'API-KEY': key, 'Accept': 'application/json' }
+    });
     const body = await r.json().catch(()=>({}));
     return { ok:r.ok, status:r.status, url, body };
   }catch(e){
@@ -293,7 +417,10 @@ function hideDebug() {
   $('logStatus').className = 'mss-logstatus';
 }
 function clearTimer(){
-  if (tick){ clearInterval(tick); tick=null; }
+  if (tick){
+    clearInterval(tick);
+    tick=null;
+  }
   $('timer').textContent = '';
 }
 function stopTracks(){
@@ -322,70 +449,28 @@ function resetRecordingUI(msg='Not recording'){
   hideDebug();
 }
 
-/* Load config/data (Render first, local fallback) */
+/* Load config/data from Render */
 async function loadAll(){
-  const ts = '?ts=' + Date.now();
-  let formRes, configRes, imageRes;
+  const [f,c,i] = await Promise.allSettled([
+    fetch(SERVICE_BASE + '/config/forms?ts='+Date.now(), {cache:'no-store'}),
+    fetch(SERVICE_BASE + '/config/widget?ts='+Date.now(), {cache:'no-store'}),
+    fetch(SERVICE_BASE + '/config/images?ts='+Date.now(), {cache:'no-store'})
+  ]);
 
-  try {
-    [formRes, configRes, imageRes] = await Promise.all([
-      fetch(`${SERVICE_BASE}/config/forms${ts}`,  { cache:'no-store' }),
-      fetch(`${SERVICE_BASE}/config/widget${ts}`, { cache:'no-store' }),
-      fetch(`${SERVICE_BASE}/config/images${ts}`,{ cache:'no-store' }),
-    ]);
-  } catch (e) {
-    console.warn('[widget] Render fetch failed, will use local fallbacks where needed', e);
-  }
+  FORM   = f.status==='fulfilled' && f.value.ok ? await f.value.json() : { survey:[] };
+  CONFIG = c.status==='fulfilled' && c.value.ok ? await c.value.json() : {
+    editable:{},
+    api:{}, theme:'apple', audioMinSeconds:30, audioMaxSeconds:61,
+    logger:{ enabled:false, url:'' }
+  };
+  IMAGE  = i.status==='fulfilled' && i.value.ok ? await i.value.json() : {};
 
-  // FORM
-  try{
-    if (formRes && formRes.ok){
-      FORM = await formRes.json();
-    } else {
-      const f2 = await fetch('form.json' + ts, { cache:'no-store' });
-      FORM = await f2.json();
-    }
-  }catch(e){
-    console.warn('[widget] form load failed, using empty survey', e);
-    FORM = { survey:[] };
-  }
+  $('brand').textContent = FORM.headline || 'MySpeakingScore Widget';
+  $('powered').textContent =
+    (CONFIG.editable?.poweredByLabel === false) ? '' : (FORM.poweredByLabel || 'Powered by MSS Vox');
 
-  // CONFIG
-  try{
-    if (configRes && configRes.ok){
-      CONFIG = await configRes.json();
-    } else {
-      const c2 = await fetch('config.json' + ts, { cache:'no-store' });
-      CONFIG = await c2.json();
-    }
-  }catch(e){
-    console.warn('[widget] config load failed, using defaults', e);
-    CONFIG = {
-      editable:{},
-      api:{ enabled:true, baseUrl:'', key:'', secret:'' },
-      logger:{ enabled:false, url:'' },
-      audioMinSeconds:30,
-      audioMaxSeconds:61,
-      theme:'default'
-    };
-  }
-
-  // IMAGE
-  try{
-    if (imageRes && imageRes.ok){
-      IMAGE = await imageRes.json();
-    } else {
-      const i2 = await fetch('image.json' + ts, { cache:'no-store' });
-      IMAGE = await i2.json();
-    }
-  }catch(e){
-    console.warn('[widget] image load failed, using blank logo', e);
-    IMAGE = {};
-  }
-
-  $('brand').textContent = FORM.headline || '';
-  $('powered').textContent = (CONFIG.editable?.poweredByLabel===false)?'':(FORM.poweredByLabel||'');
-  const logo=getLogoFrom(IMAGE); if(logo) $('logo').src=logo;
+  const logo=getLogoFrom(IMAGE);
+  if(logo) $('logo').src=logo;
 
   renderQ();
   resetRecordingUI();
@@ -417,7 +502,9 @@ async function startRecording(){
 
     recording=true;
     t0=performance.now();
-    tick=setInterval(()=>{ $('timer').textContent=mmss(performance.now()-t0); },200);
+    tick=setInterval(()=>{
+      $('timer').textContent=mmss(performance.now()-t0);
+    },200);
 
     $('recBtn').disabled=true;
     $('stopBtn').disabled=false;
@@ -429,7 +516,6 @@ async function startRecording(){
     mediaRecorder.start();
     setStatus('Recording started');
   }catch(err){
-    console.warn(err);
     setStatus('Microphone permission denied',false);
   }
 }
@@ -448,7 +534,8 @@ function finalizeRecording(){
   releaseBlobUrl();
   url=URL.createObjectURL(blob);
 
-  $('player').src=url; $('playerWrap').style.display='block';
+  $('player').src=url;
+  $('playerWrap').style.display='block';
   $('recState').textContent='Ready to review or submit';
   $('recBtn').disabled=false;
   $('submitBtn').disabled=false;
@@ -501,16 +588,20 @@ $('clearFileBtn')?.addEventListener('click', ()=>{
 });
 
 /* Submit */
-function getActiveAudioBlob(){ if (uploadedFile) return uploadedFile; if (blob) return blob; return null; }
+function getActiveAudioBlob(){
+  if (uploadedFile) return uploadedFile;
+  if (blob) return blob;
+  return null;
+}
 
 async function submitRecording(){
-  const base = (CONFIG?.api?.baseUrl || '').trim();
-  const key  = (CONFIG?.api?.key || '').trim();
-  const secret = (CONFIG?.api?.secret || '').trim();
+  const base  = (CONFIG?.api?.baseUrl || '').trim();
+  const key   = (CONFIG?.api?.key || '').trim();
+  const secret= (CONFIG?.api?.secret || '').trim();
 
-  if (!key || !secret) {
-    setStatus('Missing API key or X-API-SECRET in config.json', false);
-    appendAttempt({ error:'missing_credentials', key: !!key, secret: !!secret });
+  if (!key || !secret || !base) {
+    setStatus('Missing MSS API configuration (baseUrl / key / secret)', false);
+    appendAttempt({ error:'missing_credentials', base:!!base, key: !!key, secret: !!secret });
     return;
   }
 
@@ -560,13 +651,23 @@ async function submitRecording(){
   let submitSec = 0;
   const tStart = performance.now();
   try{
-    const headers = { 'API-KEY': key, 'X-API-SECRET': secret, 'Accept':'application/json' };
+    const headers = {
+      'API-KEY': key,
+      'X-API-SECRET': secret,
+      'Accept':'application/json'
+    };
     const res = await fetch(endpoint, { method:'POST', headers, body: fd });
     submitSec = Math.max(0, (performance.now()-tStart)/1000);
     const body = await res.json().catch(()=>({}));
     appendAttempt({
-      step:'vox', status:res.status, url:endpoint,
-      sent:{fileName: uploadedFile ? uploadedFile.name : 'answer.wav', fileType:wavBlob.type, fileSize:wavBlob.size },
+      step:'vox',
+      status:res.status,
+      url:endpoint,
+      sent:{
+        fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
+        fileType:wavBlob.type,
+        fileSize:wavBlob.size
+      },
       headers: {
         'X-RateLimit-Limit': res.headers.get('X-RateLimit-Limit'),
         'X-RateLimit-Remaining': res.headers.get('X-RateLimit-Remaining')
@@ -582,12 +683,29 @@ async function submitRecording(){
       $('debugBtnRow').style.display='flex';
       showDebug({ received: body });
 
-      // Dashboard
-      openDashboard();
-      try { dashboardWindow?.postMessage({ type:'mss-results', payload: body }, '*'); }
-      catch(e){ console.warn('dash postMessage failed', e); }
+      // Stash last results so Dashboard.html can pull even if postMessage misses
+      try {
+        sessionStorage.setItem('mss-last-results', JSON.stringify(body));
+      } catch (e) {
+        console.warn('Could not store results in sessionStorage', e);
+      }
 
-      // ---- LOGGING (with indicator) ----
+      // Open dashboard modal
+      openDashboard();
+
+      // Push results to dashboard iframe too
+      try {
+        if (dashboardWindow) {
+          dashboardWindow.postMessage(
+            { type:'mss-results', payload: body },
+            '*'
+          );
+        }
+      } catch (e) {
+        console.warn('dash postMessage failed', e);
+      }
+
+      // Logging to CSV via Render
       logResultToCsv(body, {
         fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
         lengthSec: Math.round(dur || 0),
@@ -609,19 +727,19 @@ async function submitRecording(){
 
 /* Logging helper with UI feedback */
 async function logResultToCsv(mssBody, meta){
-  const enabled = Boolean(CONFIG?.logger?.enabled) && !!CONFIG?.logger?.url;
+  const enabled = Boolean(CONFIG?.logger?.enabled);
   if (!enabled) return;
+
+  const url = CONFIG?.logger?.url || (SERVICE_BASE.replace(/\/+$/,'') + '/log/submission');
 
   const ipPlaceholder = ''; // server fills real IP
   const ts = new Date().toISOString();
 
-  // Extract scores safely
   const toefl = mssBody?.elsa_results?.toefl_score ?? mssBody?.toefl_score ?? '';
   const ielts = mssBody?.elsa_results?.ielts_score ?? mssBody?.ielts_score ?? '';
   const pte   = mssBody?.elsa_results?.pte_score   ?? mssBody?.pte_score   ?? '';
   const cefr  = (mssBody?.elsa_results?.cefr_level || mssBody?.cefr_level || '').toString().toUpperCase();
 
-  // Transcript + WPM (best-effort: use top-level transcript if present)
   const transcript = (mssBody?.transcript || '').toString().trim();
   let wpm = '';
   try{
@@ -635,7 +753,7 @@ async function logResultToCsv(mssBody, meta){
   const payload = {
     timestamp: ts,
     ip: ipPlaceholder,
-    userId: '',                      // fill later if desired
+    userId: '',
     fileName: meta.fileName || '',
     lengthSec: meta.lengthSec || '',
     submitTime: meta.submitTime || '',
@@ -645,7 +763,6 @@ async function logResultToCsv(mssBody, meta){
     wpm
   };
 
-  const url = CONFIG.logger.url;
   const statusEl = $('logStatus');
   try{
     statusEl.textContent = 'Logging…';
@@ -684,6 +801,9 @@ function closeDashboard(){
   m.style.display='none'; m.setAttribute('aria-hidden','true');
 }
 $('closeDash').addEventListener('click', closeDashboard);
+$('dashModal').addEventListener('click', (e)=>{
+  if (e.target === $('dashModal')) closeDashboard();
+});
 
 /* Wire */
 window.addEventListener('DOMContentLoaded', async ()=>{
@@ -691,24 +811,11 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   $('recBtn').addEventListener('click',startRecording);
   $('stopBtn').addEventListener('click',stopRecording);
   $('submitBtn').addEventListener('click',submitRecording);
-  $('prevBtn').addEventListener('click',()=>{
-    idx--;
-    renderQ();
-    resetRecordingUI('Not recording');
-    hideDebug();
-  });
-  $('nextBtn').addEventListener('click',()=>{
-    idx++;
-    renderQ();
-    resetRecordingUI('Not recording');
-    hideDebug();
-  });
+  $('prevBtn').addEventListener('click',()=>{idx--;renderQ(); resetRecordingUI('Not recording'); hideDebug();});
+  $('nextBtn').addEventListener('click',()=>{idx++;renderQ(); resetRecordingUI('Not recording'); hideDebug();});
   $('toggleDebug').addEventListener('click', ()=>{
     const w = $('debugWrap');
     w.style.display = (w.style.display==='block'?'none':'block');
-  });
-  $('dashModal').addEventListener('click', (e)=>{
-    if (e.target === $('dashModal')) closeDashboard();
   });
 });
 </script>
