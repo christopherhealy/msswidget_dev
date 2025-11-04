@@ -565,7 +565,25 @@
     }
   }
 
-  window.addEventListener("DOMContentLoaded", boot);
+ window.addEventListener("message", (e) => {
+  try {
+    const msg = e.data || {};
+    if (msg.type !== "mss-results" || !msg.payload) return;
+
+    const raw = msg.payload;
+    // Support both shapes:
+    // 1) payload = resultBody
+    // 2) payload = { body: resultBody, metaData: {...} }
+    const payload = raw.body || raw.result || raw;
+
+    if (!payload) return;
+    applyMSS(payload);
+  } catch (err) {
+    console.warn("[Dashboard] postMessage handler error", err);
+  }
+});
+
+window.addEventListener("DOMContentLoaded", boot);
 </script>
 </body>
 </html>
