@@ -1,354 +1,728 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MSS Score Results</title>
-<style>
-  :root{
-    --bg:#f6f7fb; --card:#fff; --edge:#e5e7eb; --muted:#6b7280; --text:#111827; --blue:#1a5cff;
-  }
-  html,body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font:14px/1.45 -apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  }
-  .shell{max-width:1080px;margin:24px auto;padding:0 16px}
-  .bar{display:flex;align-items:center;gap:10px}
-  .bar h1{font-size:16px;margin:0}
-  .bar .meta{margin-left:auto;color:var(--muted);font-size:12px}
-  .bar .btn{
-    border:1px solid var(--edge);
-    background:var(--card);
-    padding:6px 10px;
-    border-radius:999px;
-    font-weight:600;
-    cursor:pointer;
-  }
-  .card{
-    background:var(--card);
-    border:1px solid var(--edge);
-    border-radius:16px;
-    box-shadow:0 10px 28px rgba(0,0,0,.05);
-    overflow:hidden;
-  }
-  .card h3{
-    margin:0;
-    padding:12px 14px;
-    border-bottom:1px solid var(--edge);
-    font-size:14px;
-  }
-  .grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:16px;
-    padding:14px;
-  }
-  @media (min-width:920px){
-    .grid{grid-template-columns:1.2fr .8fr}
-  }
+  <meta charset="UTF-8">
+  <title>MSS Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --edge:#e5e7eb;
+      --muted:#6b7280;
+      --ink:#111827;
+      --accent:#1d4ed8;
+      --accent-soft:#eff6ff;
+      --accent-strong:#1e40af;
+      --good:#16a34a;
+      --warn:#f97316;
+      --bad:#dc2626;
+      --chip:#f9fafb;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+      padding:16px;
+    }
+    .dash-root{
+      max-width:960px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
 
-  /* Gauge area */
-  .gwrap{display:grid;place-items:center;padding:8px 12px}
-  svg{max-width:680px;width:100%;height:auto;display:block}
-  .scale{font-size:13px;fill:#6b7280}
+    .dash-top{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .dash-title{
+      font-size:1.05rem;
+      font-weight:700;
+    }
+    .dash-meta{
+      font-size:.8rem;
+      color:var(--muted);
+    }
 
-  /* tiles */
-  .tiles{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(220px,1fr));
-    gap:12px;
-  }
-  .tile{
-    border:1px solid var(--edge);
-    border-radius:14px;
-    padding:12px 14px;
-    background:#fff;
-  }
-  .tile h4{
-    margin:0 0 8px 0;
-    font-size:12px;
-    color:var(--muted);
-    font-weight:600;
-    text-transform:uppercase;
-    letter-spacing:.02em;
-  }
-  .tile .big{font-size:22px;font-weight:800}
-  .tile .sub{font-size:12px;color:var(--muted);margin-top:4px}
+    .grid{
+      display:grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
+      gap:12px;
+    }
+    @media (max-width: 768px){
+      .grid{ grid-template-columns:1fr; }
+    }
 
-  .legend{display:flex;align-items:center;gap:8px;margin:6px 0 0 6px}
-  .dot{width:8px;height:8px;border-radius:999px;background:#10b981}
-  .levelNote{font-size:12px;color:var(--muted)}
+    .card{
+      background:var(--card);
+      border-radius:16px;
+      border:1px solid var(--edge);
+      box-shadow:0 12px 30px rgba(15,23,42,.06);
+      padding:14px 16px 16px;
+    }
 
-  .rowBtns{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:center;
-    margin:14px 0 6px;
-  }
-  .btnPrimary{border:1px solid var(--edge);background:var(--blue);color:#fff;padding:10px 14px;border-radius:999px;font-weight:700;cursor:pointer}
-  .btnGhost{border:1px solid var(--edge);background:#fff;padding:10px 14px;border-radius:999px;font-weight:700;cursor:pointer}
+    /* Overall card */
+    .overall-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .overall-label{
+      font-size:.8rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.12em;
+    }
+    .overall-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent-strong);
+      font-weight:600;
+    }
+    .overall-main{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .overall-score{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:2px;
+    }
+    .overall-score-number{
+      font-size:2.5rem;
+      font-weight:800;
+      line-height:1;
+    }
+    .overall-score-caption{
+      font-size:.8rem;
+      color:var(--muted);
+    }
+    .overall-cefr-pill{
+      padding:6px 10px;
+      border-radius:999px;
+      background:#ecfdf3;
+      color:#166534;
+      font-size:.8rem;
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      margin-top:4px;
+    }
 
-  /* transcript panel */
-  .tx{
-    display:none;
-    border-top:1px solid var(--edge);
-    padding:14px;
-  }
-  .tx.show{display:block}
-  .tx .pill{
-    display:inline-block;
-    margin:2px 3px;
-    padding:2px 6px;
-    border-radius:8px;
-    background:#fff0f0;
-  }
+    .overall-bars{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .bar-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .bar-label{
+      min-width:52px;
+      font-size:.75rem;
+      color:var(--muted);
+    }
+    .bar-track{
+      flex:1;
+      height:6px;
+      border-radius:999px;
+      background:#e5e7eb;
+      overflow:hidden;
+    }
+    .bar-fill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#22c55e,#16a34a);
+      transition:width .3s ease;
+    }
+    .bar-value{
+      width:42px;
+      text-align:right;
+      font-size:.75rem;
+      color:var(--ink);
+    }
 
-</style>
+    /* Equivalency card */
+    .eq-header{
+      font-size:.85rem;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+    .chip-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .chip{
+      min-width:0;
+      padding:8px 10px;
+      border-radius:14px;
+      background:var(--chip);
+      border:1px dashed var(--edge);
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .chip-label{
+      font-size:.7rem;
+      text-transform:uppercase;
+      letter-spacing:.1em;
+      color:var(--muted);
+    }
+    .chip-main{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:6px;
+    }
+    .chip-value{
+      font-size:1.1rem;
+      font-weight:700;
+    }
+    .chip-sub{
+      font-size:.75rem;
+      color:var(--muted);
+    }
+
+    /* Skill breakdown */
+    .skills-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      margin-bottom:8px;
+    }
+    .skills-title{
+      font-size:.85rem;
+      font-weight:600;
+    }
+    .skills-note{
+      font-size:.7rem;
+      color:var(--muted);
+    }
+    .skills-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    @media (max-width:480px){
+      .skills-grid{ grid-template-columns:1fr; }
+    }
+    .skill-card{
+      border-radius:14px;
+      border:1px solid var(--edge);
+      background:var(--chip);
+      padding:8px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .skill-label{
+      font-size:.75rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.1em;
+    }
+    .skill-main{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:6px;
+    }
+    .skill-value{
+      font-size:1.1rem;
+      font-weight:700;
+    }
+    .skill-tag{
+      font-size:.7rem;
+      padding:3px 7px;
+      border-radius:999px;
+      background:#e5e7eb;
+      color:#374151;
+      font-weight:500;
+    }
+
+    /* Transcript card */
+    .tx-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .tx-title{
+      font-size:.85rem;
+      font-weight:600;
+    }
+    .tx-meta{
+      font-size:.75rem;
+      color:var(--muted);
+    }
+    .tx-toggle{
+      border-radius:999px;
+      border:1px solid var(--edge);
+      background:#fff;
+      padding:6px 10px;
+      font-size:.78rem;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .tx-toggle span.icon{
+      font-size:.7rem;
+    }
+    .tx-body{
+      max-height:0;
+      overflow:hidden;
+      transition:max-height .25s ease;
+      font-size:.82rem;
+      line-height:1.5;
+      color:#111827;
+      white-space:pre-wrap;
+    }
+    .tx-body.open{
+      padding-top:6px;
+      max-height:320px;
+    }
+
+    .footer-note{
+      text-align:right;
+      font-size:.7rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    /* tiny debug pill (optional) */
+    .debug-pill{
+      font-size:.7rem;
+      color:var(--muted);
+    }
+  </style>
 </head>
 <body>
-<div class="shell">
-  <div class="bar">
-    <h1>MSS Score Results</h1>
-    <div class="meta" id="meta"></div>
-    <button class="btn" id="closeBtn">Close</button>
+<div class="dash-root">
+  <div class="dash-top">
+    <div>
+      <div class="dash-title">Speaking score summary</div>
+      <div class="dash-meta" id="testMeta">Waiting for results…</div>
+    </div>
+    <div class="debug-pill" id="debugSource"></div>
   </div>
 
-  <div class="card">
-    <h3>MSS Skill Dashboard</h3>
-    <div class="grid">
-      <!-- Gauge -->
-      <div>
-        <div class="gwrap">
-          <svg id="gauge" viewBox="0 0 300 210" role="img" aria-label="CEFR gauge">
-            <defs>
-              <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#f87171"/>
-                <stop offset="25%" stop-color="#fbbf24"/>
-                <stop offset="55%" stop-color="#34d399"/>
-                <stop offset="100%" stop-color="#10b981"/>
-              </linearGradient>
-            </defs>
+  <div class="grid">
+    <!-- LEFT: Overall card -->
+    <div class="card">
+      <div class="overall-head">
+        <div>
+          <div class="overall-label">Overall speaking score</div>
+        </div>
+        <div id="overallTag" class="overall-tag">—</div>
+      </div>
 
-            <!-- semi-circle -->
-            <path d="M 20 150 A 130 130 0 0 1 280 150"
-                  fill="none" stroke="url(#grad)" stroke-width="26" stroke-linecap="round"/>
-
-            <!-- pointer (base at 150,155, pointing left; rotate 0–180deg) -->
-            <g id="needle" transform="rotate(0 150 155)">
-              <line x1="150" y1="155" x2="106" y2="155"
-                    stroke="#111827" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="150" cy="155" r="6" fill="#111827"/>
-            </g>
-
-            <!-- labels -->
-            <g class="scale" text-anchor="middle" dominant-baseline="hanging">
-              <text x="20"  y="190">A1</text>
-              <text x="76"  y="190">A2</text>
-              <text x="132" y="190">B1</text>
-              <text x="168" y="190">B2</text>
-              <text x="224" y="190">C1</text>
-              <text x="280" y="190">C2</text>
-            </g>
-          </svg>
+      <div class="overall-main">
+        <div class="overall-score">
+          <div id="overallScore" class="overall-score-number">—</div>
+          <div id="overallCaption" class="overall-score-caption">Score out of 30</div>
+          <div id="cefrPill" class="overall-cefr-pill" style="display:none;">
+            <span>CEFR</span>
+            <strong id="cefrValue">B2</strong>
+          </div>
         </div>
 
-        <div class="legend">
-          <span class="dot"></span>
-          <div>
-            <b id="levelLine">CEFR Level: –</b>
-            <div class="levelNote" id="levelNote"></div>
+        <div class="overall-bars">
+          <div class="bar-row">
+            <div class="bar-label">TOEFL</div>
+            <div class="bar-track"><div id="barToefl" class="bar-fill"></div></div>
+            <div id="valToefl" class="bar-value">—</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label">IELTS</div>
+            <div class="bar-track"><div id="barIelts" class="bar-fill"></div></div>
+            <div id="valIelts" class="bar-value">—</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label">PTE</div>
+            <div class="bar-track"><div id="barPte" class="bar-fill"></div></div>
+            <div id="valPte" class="bar-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Equivalencies + Skills -->
+    <div class="card">
+      <!-- Equivalency chips -->
+      <div class="eq-header">Test equivalencies</div>
+      <div class="chip-row">
+        <div class="chip">
+          <div class="chip-label">TOEFL</div>
+          <div class="chip-main">
+            <div id="chipToefl" class="chip-value">—</div>
+            <div class="chip-sub">/ 30</div>
+          </div>
+        </div>
+        <div class="chip">
+          <div class="chip-label">IELTS</div>
+          <div class="chip-main">
+            <div id="chipIelts" class="chip-value">—</div>
+            <div class="chip-sub">band</div>
+          </div>
+        </div>
+        <div class="chip">
+          <div class="chip-label">PTE</div>
+          <div class="chip-main">
+            <div id="chipPte" class="chip-value">—</div>
+            <div class="chip-sub">score</div>
+          </div>
+        </div>
+        <div class="chip">
+          <div class="chip-label">CEFR</div>
+          <div class="chip-main">
+            <div id="chipCefr" class="chip-value">—</div>
+            <div class="chip-sub">level</div>
           </div>
         </div>
       </div>
 
-      <!-- Tiles -->
-      <div class="tiles">
-        <div class="tile">
-          <h4>Overall Score</h4>
-          <div class="big" id="scoreMain">–</div>
-          <div class="sub" id="scoreCI">CI50: – • CI95: –</div>
+      <!-- Skill breakdown -->
+      <div style="margin-top:10px;">
+        <div class="skills-head">
+          <div class="skills-title">Skill breakdown</div>
+          <div class="skills-note">From ELSA metrics (0–100)</div>
         </div>
-
-        <div class="tile">
-          <h4>IELTS</h4>
-          <div class="big" id="ielts">–</div>
-          <div class="sub">0 – 9</div>
-        </div>
-
-        <div class="tile">
-          <h4>TOEFL</h4>
-          <div class="big" id="toefl">–</div>
-          <div class="sub">20 – 120</div>
-        </div>
-
-        <div class="tile">
-          <h4>PTE</h4>
-          <div class="big" id="pte">–</div>
-          <div class="sub">10 – 90</div>
+        <div class="skills-grid">
+          <div class="skill-card">
+            <div class="skill-label">Fluency</div>
+            <div class="skill-main">
+              <div id="skillFluency" class="skill-value">—</div>
+              <div id="skillFluencyTag" class="skill-tag">—</div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-label">Grammar</div>
+            <div class="skill-main">
+              <div id="skillGrammar" class="skill-value">—</div>
+              <div id="skillGrammarTag" class="skill-tag">—</div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-label">Pronunciation</div>
+            <div class="skill-main">
+              <div id="skillPron" class="skill-value">—</div>
+              <div id="skillPronTag" class="skill-tag">—</div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-label">Vocabulary</div>
+            <div class="skill-main">
+              <div id="skillVocab" class="skill-value">—</div>
+              <div id="skillVocabTag" class="skill-tag">—</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="rowBtns">
-      <button class="btnGhost" id="toggleTx">Show transcript</button>
+      <div class="footer-note" id="footerNote"></div>
     </div>
-    <div id="tx" class="tx"></div>
+  </div>
+
+  <!-- Transcript card -->
+  <div class="card">
+    <div class="tx-head">
+      <div>
+        <div class="tx-title">Transcript</div>
+        <div id="txMeta" class="tx-meta"></div>
+      </div>
+      <button id="txToggleBtn" type="button" class="tx-toggle">
+        <span class="icon">▾</span>
+        <span>Show transcript</span>
+      </button>
+    </div>
+    <div id="txBody" class="tx-body"></div>
   </div>
 </div>
 
 <script>
-/* ---------- helpers ---------- */
-const $ = id => document.getElementById(id);
-const CEFR = ['A1','A2','B1','B2','C1','C2'];
+  const $ = (id) => document.getElementById(id);
 
-function setMetaNow(){
-  $('meta').textContent = new Date().toLocaleString();
-}
-setMetaNow();
-
-/* pointer math */
-function rotateNeedleForIndex(i){
-  const idx = Math.max(0, Math.min(5, i|0));
-  const deg = (idx / 5) * 180;   // 0…180
-  const g = $('needle');
-  g.style.transition = 'transform 700ms cubic-bezier(.22,.7,.17,1.02)';
-  requestAnimationFrame(() =>
-    g.setAttribute('transform', `rotate(${deg} 150 155)`)
-  );
-}
-
-function levelSubtitle(lvl){
-  switch(lvl){
-    case 'A1': return 'Beginner';
-    case 'A2': return 'Elementary';
-    case 'B1': return 'Intermediate';
-    case 'B2': return 'Upper-intermediate';
-    case 'C1': return 'Advanced';
-    case 'C2': return 'Mastery';
-    default:   return '';
+  function firstDefined(...vals){
+    for (const v of vals){
+      if (v !== undefined && v !== null && v !== '') return v;
+    }
+    return '';
   }
-}
-
-function renderTranscript(htmlString){
-  const host = $('tx');
-  if(!htmlString){
-    host.innerHTML = '<div style="color:#6b7280;font-size:13px">No transcript supplied.</div>';
-    return;
+  function toNumberOrEmpty(v){
+    if (v === undefined || v === null || v === '') return '';
+    const n = Number(v);
+    return Number.isFinite(n) ? n : '';
   }
-  // keep the HTML but restyle the highlight spans as pills
-  host.innerHTML = String(htmlString)
-    .replaceAll('style="white-space: nowrap; background-color:',
-                'class="pill" style="background-color:')
-    .replaceAll("style='white-space: nowrap; background-color:",
-                'class="pill" style="background-color:');
-}
-
-/* ---------- main apply ---------- */
-function applyMSS(raw){
-  console.log('[Dashboard] applyMSS raw payload:', raw);
-
-  // accept logger rows like { received:{...}, ... }
-  const payload = (raw && raw.received) ? raw.received : raw || {};
-  const er = payload.elsa_results || {};
-
-  // overall score
-  const score = Number(payload.score);
-  $('scoreMain').textContent = Number.isFinite(score) ? score.toFixed(2) : '–';
-
-  // confidence intervals
-  const ci50a = payload.CI50min, ci50b = payload.CI50max;
-  const ci95a = payload.CI95min, ci95b = payload.CI95max;
-  const ci50 = (ci50a!=null && ci50b!=null)
-    ? `${Number(ci50a).toFixed(2)}–${Number(ci50b).toFixed(2)}`
-    : '–';
-  const ci95 = (ci95a!=null && ci95b!=null)
-    ? `${Number(ci95a).toFixed(2)}–${Number(ci95b).toFixed(2)}`
-    : '–';
-  $('scoreCI').textContent = `CI50: ${ci50} • CI95: ${ci95}`;
-
-  // mapped exam scores
-  $('ielts').textContent = (er.ielts_score != null) ? String(er.ielts_score) : '–';
-  $('toefl').textContent = (er.toefl_score != null) ? String(er.toefl_score) : '–';
-  $('pte').textContent   = (er.pte_score   != null) ? String(er.pte_score)   : '–';
-
-  // CEFR + gauge
-  const cefr = String(er.cefr_level || '').toUpperCase();
-  const idx  = CEFR.indexOf(cefr);
-  $('levelLine').textContent = `CEFR Level: ${cefr || '–'}`;
-  $('levelNote').textContent = levelSubtitle(cefr);
-  rotateNeedleForIndex(idx < 0 ? 0 : idx);
-
-  // transcript
-  renderTranscript(payload.transcript || raw.transcript || '');
-}
-
-/* ---------- transcript toggle ---------- */
-$('toggleTx').addEventListener('click', ()=>{
-  const box = $('tx');
-  const open = !box.classList.contains('show');
-  box.classList.toggle('show', open);
-  $('toggleTx').textContent = open ? 'Hide transcript' : 'Show transcript';
-});
-
-/* ---------- close (notify parent) ---------- */
-$('closeBtn').addEventListener('click', ()=>{
-  try{
-    window.parent && window.parent.postMessage({ type:'dashboard-close' }, '*');
-  }catch(e){
-    console.warn('[Dashboard] close postMessage failed', e);
+  function pctFromScore(score, max){
+    const n = toNumberOrEmpty(score);
+    if (n === '') return 0;
+    return Math.max(0, Math.min(100, (n / max) * 100));
   }
-});
+  function ratingTag(val){
+    const n = Number(val);
+    if (!Number.isFinite(n)) return '—';
+    if (n >= 85) return 'Excellent';
+    if (n >= 70) return 'Strong';
+    if (n >= 55) return 'Developing';
+    return 'Needs work';
+  }
 
-/* ---------- postMessage bridge ---------- */
-window.addEventListener('message', (ev)=>{
-  try{
+  function normalizePayload(raw){
+    const p = raw || {};
+    const er = p.elsa_results || p.elsa || p.results || {};
+
+    const overall = firstDefined(
+      p.overall_score,
+      p.mss_overall,
+      er.overall_score,
+      er.overall,
+      p.score
+    );
+    const toefl = firstDefined(
+      p.toefl_score,
+      p.toefl,
+      er.toefl_score,
+      er.toefl
+    );
+    const ielts = firstDefined(
+      p.ielts_score,
+      p.ielts,
+      er.ielts_score,
+      er.ielts
+    );
+    const pte = firstDefined(
+      p.pte_score,
+      p.pte,
+      er.pte_score,
+      er.pte
+    );
+    const cefr = (firstDefined(
+      p.cefr_level,
+      p.cefr,
+      (er.cefr_level || er.cefr)
+    ) || '').toString().toUpperCase();
+
+    const transcript = firstDefined(
+      p.transcript,
+      er.transcript,
+      p.text,
+      p.speech_text
+    );
+
+    const durationSec = firstDefined(
+      p.audio_seconds,
+      p.duration_seconds,
+      p.duration,
+      er.audio_seconds
+    );
+
+    const createdAt = firstDefined(
+      p.created_at,
+      p.timestamp,
+      er.created_at
+    );
+
+    const skillSrc = er.skills || er.elsa_skills || er || p.skills || {};
+
+    const fluency = firstDefined(
+      skillSrc.fluency,
+      skillSrc.speech_fluency,
+      skillSrc.fluency_score
+    );
+    const grammar = firstDefined(
+      skillSrc.grammar,
+      skillSrc.grammar_score
+    );
+    const pron = firstDefined(
+      skillSrc.pronunciation,
+      skillSrc.pronunciation_score,
+      skillSrc.pron_score
+    );
+    const vocab = firstDefined(
+      skillSrc.vocabulary,
+      skillSrc.vocab,
+      skillSrc.vocabulary_score
+    );
+
+    return {
+      raw:p,
+      overall,
+      toefl, ielts, pte, cefr,
+      transcript,
+      durationSec,
+      createdAt,
+      skills:{
+        fluency, grammar, pron, vocab
+      }
+    };
+  }
+
+  function applyMSS(raw){
+    const norm = normalizePayload(raw);
+    console.log('📊 Dashboard normalized payload:', norm);
+
+    const srcEl = $('debugSource');
+    srcEl.textContent = raw && raw.request_id ? `request: ${raw.request_id}` : '';
+
+    // header / meta
+    const metaPieces = [];
+    if (norm.createdAt) metaPieces.push(new Date(norm.createdAt).toLocaleString());
+    if (norm.durationSec) metaPieces.push(`Audio ~${Math.round(norm.durationSec)}s`);
+    $('testMeta').textContent = metaPieces.join(' • ') || 'Result received';
+
+    // overall
+    const overallNum = toNumberOrEmpty(norm.overall);
+    $('overallScore').textContent = overallNum === '' ? '—' : overallNum;
+    $('overallCaption').textContent = 'MySpeakingScore overall';
+
+    const tag = overallNum === '' ? 'No score' :
+      overallNum >= 26 ? 'High proficiency' :
+      overallNum >= 22 ? 'Strong' :
+      overallNum >= 18 ? 'Developing' : 'Needs improvement';
+
+    $('overallTag').textContent = tag;
+
+    // CEFR
+    if (norm.cefr){
+      $('cefrPill').style.display = '';
+      $('cefrValue').textContent = norm.cefr;
+      $('chipCefr').textContent = norm.cefr;
+    } else {
+      $('cefrPill').style.display = 'none';
+      $('chipCefr').textContent = '—';
+    }
+
+    // test equivalencies + bars
+    const toeflNum = toNumberOrEmpty(norm.toefl);
+    const ieltsNum = toNumberOrEmpty(norm.ielts);
+    const pteNum   = toNumberOrEmpty(norm.pte);
+
+    $('chipToefl').textContent = toeflNum === '' ? '—' : toeflNum;
+    $('chipIelts').textContent = ieltsNum === '' ? '—' : ieltsNum;
+    $('chipPte').textContent   = pteNum   === '' ? '—' : pteNum;
+
+    $('valToefl').textContent = toeflNum === '' ? '—' : toeflNum;
+    $('valIelts').textContent = ieltsNum === '' ? '—' : ieltsNum;
+    $('valPte').textContent   = pteNum   === '' ? '—' : pteNum;
+
+    $('barToefl').style.width = pctFromScore(toeflNum, 30) + '%';
+    $('barIelts').style.width = pctFromScore(ieltsNum, 9) + '%';
+    $('barPte').style.width   = pctFromScore(pteNum, 90) + '%';
+
+    // skill breakdown
+    const s = norm.skills || {};
+    function setSkill(idBase, val){
+      const valEl = $('skill' + idBase);
+      const tagEl = $('skill' + idBase + 'Tag');
+      if (!valEl || !tagEl) return;
+      if (val === '' || val === undefined || val === null){
+        valEl.textContent = '—';
+        tagEl.textContent = '—';
+        return;
+      }
+      const n = toNumberOrEmpty(val);
+      valEl.textContent = n === '' ? String(val) : n;
+      tagEl.textContent = ratingTag(n === '' ? Number(val) : n);
+    }
+
+    setSkill('Fluency', s.fluency);
+    setSkill('Grammar', s.grammar);
+    setSkill('Pron',    s.pron);
+    setSkill('Vocab',   s.vocab);
+
+    // transcript
+    const tx = norm.transcript || '';
+    const hasTx = tx.trim().length > 0;
+    $('txBody').textContent = hasTx ? tx.trim() : '(No transcript returned.)';
+    $('txMeta').textContent = hasTx ? 'Raw ASR transcript' : '';
+
+    // footer note
+    $('footerNote').textContent = 'Dashboard view only – underlying JSON is logged separately.';
+  }
+
+  function wireTranscriptToggle(){
+    const btn = $('txToggleBtn');
+    const body = $('txBody');
+    if (!btn || !body) return;
+
+    btn.addEventListener('click', ()=>{
+      const open = body.classList.toggle('open');
+      const labelSpan = btn.querySelector('span:nth-child(2)');
+      const iconSpan = btn.querySelector('span.icon');
+      if (labelSpan) labelSpan.textContent = open ? 'Hide transcript' : 'Show transcript';
+      if (iconSpan) iconSpan.textContent = open ? '▴' : '▾';
+    });
+  }
+
+  // message listener from Widget.html
+  window.addEventListener('message', (ev)=>{
     const d = ev.data;
-    if(!d) return;
+    if (!d) return;
+    console.log('📨 Dashboard received message:', d);
 
-    console.log('[Dashboard] received message:', d);
-
-    // canonical types we expect from Widget
-    if (d.type === 'mss-results' ||
-        d.type === 'mss:result' ||
-        d.type === 'mss-result' ||
-        d.type === 'mssScore') {
-
-      const payload = d.payload || d.result || d.data || d;
+    let payload = d;
+    if (typeof d === 'object'){
+      payload = d.payload || d.result || d.data || d.mss || d;
+    }
+    try{
       applyMSS(payload);
-      return;
-    }
-
-    // Fallback: message itself looks like a payload
-    if (d.elsa_results || d.transcript || typeof d.score !== 'undefined' || d.received){
-      applyMSS(d);
-    }
-  }catch(err){
-    console.warn('[Dashboard] message handler error:', err);
-  }
-});
-
-/* ---------- optional demo mode ---------- */
-(function maybeDemo(){
-  const q = new URLSearchParams(location.search);
-  if(!q.get('demo')) return;
-  applyMSS({
-    score: 3.18,
-    CI50min: 3.04,
-    CI50max: 3.32,
-    CI95min: 2.77,
-    CI95max: 3.59,
-    transcript: '<span style="white-space: nowrap; background-color: rgba(255,0,0,.15);">&#8201;sample&#8201;</span> transcript…',
-    elsa_results:{
-      cefr_level:'B2',
-      ielts_score:8.0,
-      toefl_score:95,
-      pte_score:78
+    }catch(err){
+      console.error('Dashboard applyMSS failed:', err);
     }
   });
-})();
+
+  // Optional: demo mode if you open Dashboard.html directly with ?demo=1
+  function maybeDemo(){
+    const qs = new URLSearchParams(location.search);
+    if (!qs.get('demo')) return;
+    const fake = {
+      overall_score: 23,
+      toefl_score: 23,
+      ielts_score: 6.5,
+      pte_score: 58,
+      cefr_level: 'B2',
+      duration_seconds: 78,
+      created_at: new Date().toISOString(),
+      elsa_results:{
+        fluency: 78,
+        grammar: 72,
+        pronunciation: 81,
+        vocabulary: 69
+      },
+      transcript: 'This is a demo transcript so you can test the dashboard without calling the API.'
+    };
+    applyMSS(fake);
+  }
+
+  window.addEventListener('DOMContentLoaded', ()=>{
+    wireTranscriptToggle();
+    maybeDemo();
+  });
 </script>
 </body>
 </html>
