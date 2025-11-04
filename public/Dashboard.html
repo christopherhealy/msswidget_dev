@@ -523,6 +523,7 @@ function boot(){
     const d = ev.data;
     if (!d) return;
     if (d.type === 'mss:result' || d.type === 'mss-result' || d.type === 'mssScore'){
+      console.log("📦 Dashboard received message:", JSON.stringify(d, null, 2));
       applyMSS(d.payload || d.result || d);
     }else if (d.result || d.meta || d.elsa_results){
       // generic fallback – treat whole message as payload
