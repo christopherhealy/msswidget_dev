@@ -523,7 +523,10 @@
     }else{
       if (intro) intro.textContent =
         "Click “Show transcript” to reveal the full text. Transcript is hidden for privacy.";
-      if (bodyEl) bodyEl.textContent = CURRENT_TRANSCRIPT;
+      bodyEl.innerHTML = "";
+	bodyEl.textContent = CURRENT_TRANSCRIPT
+  	.replace(/<[^>]+>/g, "")           // strip any HTML tags
+  	.replace(/&[#A-Za-z0-9]+;/g, " "); // decode artifacts like &#8203;
     }
 
     // Length & WPM (best-effort; may be missing)
