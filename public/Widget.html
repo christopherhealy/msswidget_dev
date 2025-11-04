@@ -5,75 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MSS Widget</title>
 
-  <!-- Base theme (will be swapped dynamically after config load) -->
-  <link id="themeCss" rel="stylesheet" href="themes/mss-widget-apple.css">
-
-  <script>
-    /* ------------------------------------------------------------------
-       ENV / SERVICE BASE
-    ------------------------------------------------------------------ */
-    const SERVICE_BASE = window.location.hostname.includes('localhost')
-      ? 'http://localhost:3000'
-      : 'https://msswidget-dev.onrender.com';
-
-    const mode = SERVICE_BASE.includes('localhost') ? 'LOCAL DEV' : 'RENDER PROD';
-    console.log(`🧩 MSS Widget running in ${mode} mode`);
-
-    /* ------------------------------------------------------------------
-       Dynamic theme loader (Render first, local fallback)
-    ------------------------------------------------------------------ */
-    async function loadTheme() {
-      const ts = '?ts=' + Date.now();
-      const link = document.getElementById('themeCss');
-
-      function applyThemeFromConfig(cfg) {
-        try {
-          const t = (cfg.theme || 'default').toLowerCase();
-          const file =
-            t === 'pink'  ? 'themes/mss-widget-pink.css'  :
-            t === 'apple' ? 'themes/mss-widget-apple.css' :
-                            'themes/mss-widget-default.css';
-          link.onerror = () => link.setAttribute('href', 'themes/mss-widget-default.css');
-          link.setAttribute('href', file);
-        } catch {
-          link.setAttribute('href', 'themes/mss-widget-default.css');
-        }
-      }
-
-      try {
-        // Try Render-config first
-        const r = await fetch(`${SERVICE_BASE}/config/widget${ts}`, { cache:'no-store' });
-        if (!r.ok) throw new Error('remote theme config failed: ' + r.status);
-        const cfg = await r.json();
-        applyThemeFromConfig(cfg);
-        return;
-      } catch (e) {
-        console.warn('[theme] Render config failed, trying local config.json', e);
-      }
-
-      // Local fallback
-      try {
-        const r2 = await fetch('config.json' + ts, { cache:'no-store' });
-        if (!r2.ok) throw new Error('local config.json not found');
-        const cfg2 = await r2.json();
-        applyThemeFromConfig(cfg2);
-      } catch (e2) {
-        console.warn('[theme] local config failed, using default', e2);
-        link.setAttribute('href', 'themes/mss-widget-default.css');
-      }
-    }
-
-    loadTheme();
-  </script>
+  <!-- Theme (Apple by default, responsive) -->
+  <link id="themeCss" rel="stylesheet" href="/themes/mss-widget-apple.css"/>
 
   <style>
-    /* Extra UI bits on top of the theme CSS */
+    /* Small extras on top of theme CSS */
+
     .mss-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; }
     .mss-file { display:none; }
-    .mss-filelabel { cursor:pointer; }
     .mss-filebadge { font-size:12px; color:#6b7280; margin-top:4px; text-align:center }
     .mss-line {
-      height:3px; border-radius:999px; background:linear-gradient(90deg,#1a5cff,var(--edge,#e5e7eb));
+      height:3px; border-radius:999px;
+      background:linear-gradient(90deg,#1a5cff,var(--edge,#e5e7eb));
       width:0%; transition: width .2s ease; margin:10px auto 0;
     }
     .mss-modal {
@@ -85,10 +28,14 @@
       border:1px solid var(--edge,#e5e7eb); box-shadow:0 12px 36px rgba(0,0,0,.2);
       overflow:hidden; display:flex; flex-direction:column;
     }
-    .mss-modal header { display:flex; align-items:center; padding:10px 12px; border-bottom:1px solid var(--edge,#e5e7eb) }
+    .mss-modal header {
+      display:flex; align-items:center; padding:10px 12px;
+      border-bottom:1px solid var(--edge,#e5e7eb)
+    }
     .mss-modal header .title { font-weight:800; }
     .mss-modal header .grow { flex:1 }
     .mss-modal iframe { flex:1; border:0; width:100%; }
+
     .mss-resultswrap { margin-top:12px }
     .mss-debug { display:none; margin-top:10px }
     .mss-debug pre { max-height:260px; overflow:auto }
@@ -118,10 +65,10 @@
           <button id="recBtn"  class="mss-btn primary">Record your response</button>
           <button id="stopBtn" class="mss-btn" disabled>Stop</button>
 
-          <label for="fileInput" class="mss-btn mss-filelabel">Choose an audio file</label>
+          <label for="fileInput" class="mss-btn">Upload audio</label>
           <input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
 
-          <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear file</button>
+          <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear</button>
         </div>
 
         <div class="mss-recbar">
@@ -144,7 +91,6 @@
         <div class="mss-resultswrap">
           <div id="progressText" class="mss-muted"></div>
           <div id="progressLine" class="mss-line"></div>
-          <!-- Logging indicator -->
           <div id="logStatus" class="mss-logstatus"></div>
         </div>
       </div>
@@ -170,52 +116,77 @@
         <div class="grow"></div>
         <button id="closeDash" class="mss-btn">Close</button>
       </header>
-      <iframe id="dashFrame" src="dashboard.html"></iframe>
+      <iframe id="dashFrame" src="Dashboard.html"></iframe>
     </div>
   </div>
 
 <script>
-/* ===== Basic state ===== */
+/* ------------------------------------------------------------------
+   CONFIG / ENV
+------------------------------------------------------------------ */
+const SERVICE_BASE = window.location.hostname.includes('localhost')
+  ? 'http://localhost:3000'
+  : 'https://msswidget-dev.onrender.com';
+
+console.log('[MSS Widget] SERVICE_BASE =', SERVICE_BASE);
+
+/* ------------------------------------------------------------------
+   STATE
+------------------------------------------------------------------ */
 const $ = id => document.getElementById(id);
+
 let FORM=null, CONFIG=null, IMAGE=null;
-let idx=0, chunks=[], mediaRecorder=null, recording=false, blob=null, url=null;
-let uploadedFile=null;
-let t0=0, tick=null;
+let idx=0;
+let chunks=[], mediaRecorder=null, recording=false;
+let blob=null, uploadedFile=null, url=null;
+let timerId=null;
 let submitTimerId=null, submitStart=0;
 let dashboardWindow=null;
 
-/* ===== Helpers ===== */
+/* ------------------------------------------------------------------
+   SMALL HELPERS
+------------------------------------------------------------------ */
 function mmss(ms){
-  const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60;
+  const s = Math.floor(ms/1000);
+  const m = Math.floor(s/60);
+  const r = s % 60;
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
 }
 function setStatus(msg, ok=true){
-  const el=$('status');
-  el.textContent=msg;
-  el.className='mss-status ' + (ok?'ok':'warn');
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'mss-status ' + (ok ? 'ok' : 'warn');
 }
 function getLogoFrom(img){
-  if(!img) return '';
-  for(const k of ['logoDataUrl','dataUrl','logo','src','url','path']) {
-    if(img[k]) return String(img[k]);
+  if (!img) return '';
+  for (const k of ['logoDataUrl','dataUrl','logo','src','url','path']){
+    if (img[k]) return String(img[k]);
   }
   return '';
 }
-function showDebug(obj){ $('results').textContent = JSON.stringify(obj, null, 2); }
+function showDebug(obj){
+  $('results').textContent = JSON.stringify(obj, null, 2);
+}
 function appendAttempt(at){
   const prev = $('results').textContent.trim();
-  const add = JSON.stringify(at, null, 2);
+  const add  = JSON.stringify(at, null, 2);
   $('results').textContent = prev ? (prev + '\n' + add) : add;
 }
+function hideDebug(){
+  $('debugBtnRow').style.display = 'none';
+  $('debugWrap').style.display = 'none';
+  $('logStatus').textContent = '';
+  $('logStatus').className = 'mss-logstatus';
+}
 
-/* Configurable duration */
+/* Configurable duration bounds */
 function getDurationBounds(){
   const minS = Number(CONFIG?.audioMinSeconds ?? 30);
   const maxS = Number(CONFIG?.audioMaxSeconds ?? 61);
   return { minS, maxS };
 }
 
-/* Progress */
+/* Progress line */
 function startProgress(label='Processing'){
   submitStart = performance.now();
   $('progressText').textContent = `${label}… 0.00s`;
@@ -228,7 +199,10 @@ function startProgress(label='Processing'){
   }, 120);
 }
 function stopProgress(finalLabel='Done'){
-  if (submitTimerId){ clearInterval(submitTimerId); submitTimerId=null; }
+  if (submitTimerId){
+    clearInterval(submitTimerId);
+    submitTimerId = null;
+  }
   const s = ((performance.now()-submitStart)/1000).toFixed(2);
   $('progressText').textContent = `${finalLabel} (${s}s)`;
   $('progressLine').style.width = '100%';
@@ -244,23 +218,31 @@ function stopProgress(finalLabel='Done'){
 /* WAV transcode */
 async function blobToArrayBuffer(b){ return await b.arrayBuffer(); }
 function encodeWavFromAudioBuffer(abuf){
-  const chs = abuf.numberOfChannels, rate = abuf.sampleRate, len = abuf.length;
-  const bytesPerSample = 2, blockAlign = chs * bytesPerSample, dataBytes = len * blockAlign;
-  const buf = new ArrayBuffer(44 + dataBytes), v = new DataView(buf);
+  const chs = abuf.numberOfChannels;
+  const rate = abuf.sampleRate;
+  const len  = abuf.length;
+
+  const bytesPerSample = 2;
+  const blockAlign = chs * bytesPerSample;
+  const dataBytes = len * blockAlign;
+
+  const buf = new ArrayBuffer(44 + dataBytes);
+  const v   = new DataView(buf);
   const w = (o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+
   w(0,'RIFF'); v.setUint32(4,36+dataBytes,true); w(8,'WAVE');
   w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true);
-  w(36,'data'); v.setUint32(40,dataBytes,true);
   v.setUint16(22,chs,true); v.setUint32(24,rate,true);
   v.setUint32(28,rate*blockAlign,true); v.setUint16(32,blockAlign,true);
-  v.setUint16(34,16,true);
+  v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,dataBytes,true);
+
   const chData = Array.from({length:chs}, (_,i)=>abuf.getChannelData(i));
-  let off=44;
+  let off = 44;
   for(let i=0;i<len;i++){
     for(let c=0;c<chs;c++){
       let s = Math.max(-1, Math.min(1, chData[c][i]));
       v.setInt16(off, s<0 ? s*0x8000 : s*0x7FFF, true);
-      off+=2;
+      off += 2;
     }
   }
   return new Blob([buf],{type:'audio/wav'});
@@ -277,7 +259,7 @@ async function transcodeToWav(origBlob){
 async function checkAccess(baseUrl, key){
   try{
     const url = baseUrl.replace(/\/+$/,'') + '/api/check-access';
-    const r = await fetch(url, { headers:{ 'API-KEY': key, 'Accept': 'application/json' }});
+    const r = await fetch(url, { headers:{ 'API-KEY': key, 'Accept':'application/json' }});
     const body = await r.json().catch(()=>({}));
     return { ok:r.ok, status:r.status, url, body };
   }catch(e){
@@ -285,15 +267,9 @@ async function checkAccess(baseUrl, key){
   }
 }
 
-/* UI helpers */
-function hideDebug() {
-  $('debugBtnRow').style.display = 'none';
-  $('debugWrap').style.display = 'none';
-  $('logStatus').textContent = '';
-  $('logStatus').className = 'mss-logstatus';
-}
+/* Timer / recording helpers */
 function clearTimer(){
-  if (tick){ clearInterval(tick); tick=null; }
+  if (timerId){ clearInterval(timerId); timerId=null; }
   $('timer').textContent = '';
 }
 function stopTracks(){
@@ -308,12 +284,14 @@ function releaseBlobUrl(){
 function resetRecordingUI(msg='Not recording'){
   recording = false; chunks = []; blob = null;
   clearTimer(); stopTracks(); releaseBlobUrl();
+
   $('recBtn').disabled = !!uploadedFile;
   $('stopBtn').disabled = true;
   $('submitBtn').disabled = !(uploadedFile || blob);
   $('recDot').classList.remove('on');
   $('recState').textContent = msg;
   $('playerWrap').style.display = (uploadedFile || url) ? 'block' : 'none';
+
   const p = $('player');
   if (!uploadedFile){
     try{ p.pause(); p.removeAttribute('src'); p.load(); }catch{}
@@ -322,136 +300,125 @@ function resetRecordingUI(msg='Not recording'){
   hideDebug();
 }
 
-/* Load config/data (Render first, local fallback) */
+/* ------------------------------------------------------------------
+   LOAD FORM / CONFIG / IMAGE FROM RENDER
+------------------------------------------------------------------ */
 async function loadAll(){
-  const ts = '?ts=' + Date.now();
-  let formRes, configRes, imageRes;
+  const ts = Date.now();
+  const [f,c,i] = await Promise.allSettled([
+    fetch(`${SERVICE_BASE}/config/forms?ts=${ts}`,   {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/widget?ts=${ts}`,  {cache:'no-store'}),
+    fetch(`${SERVICE_BASE}/config/images?ts=${ts}`,  {cache:'no-store'})
+  ]);
 
-  try {
-    [formRes, configRes, imageRes] = await Promise.all([
-      fetch(`${SERVICE_BASE}/config/forms${ts}`,  { cache:'no-store' }),
-      fetch(`${SERVICE_BASE}/config/widget${ts}`, { cache:'no-store' }),
-      fetch(`${SERVICE_BASE}/config/images${ts}`,{ cache:'no-store' }),
-    ]);
-  } catch (e) {
-    console.warn('[widget] Render fetch failed, will use local fallbacks where needed', e);
-  }
-
-  // FORM
   try{
-    if (formRes && formRes.ok){
-      FORM = await formRes.json();
-    } else {
-      const f2 = await fetch('form.json' + ts, { cache:'no-store' });
-      FORM = await f2.json();
-    }
-  }catch(e){
-    console.warn('[widget] form load failed, using empty survey', e);
-    FORM = { survey:[] };
-  }
+    FORM = f.status==='fulfilled' ? await f.value.json() : {};
+  }catch{ FORM = {}; }
 
-  // CONFIG
   try{
-    if (configRes && configRes.ok){
-      CONFIG = await configRes.json();
-    } else {
-      const c2 = await fetch('config.json' + ts, { cache:'no-store' });
-      CONFIG = await c2.json();
-    }
-  }catch(e){
-    console.warn('[widget] config load failed, using defaults', e);
+    CONFIG = c.status==='fulfilled' ? await c.value.json() : {};
+  }catch{
     CONFIG = {
-      editable:{},
-      api:{ enabled:true, baseUrl:'', key:'', secret:'' },
-      logger:{ enabled:false, url:'' },
-      audioMinSeconds:30,
-      audioMaxSeconds:61,
-      theme:'default'
+      editable:{}, theme:'apple',
+      api:{enabled:true, baseUrl:'', key:'', secret:''},
+      audioMinSeconds:30, audioMaxSeconds:61,
+      logger:{enabled:false,url:''}
     };
   }
 
-  // IMAGE
   try{
-    if (imageRes && imageRes.ok){
-      IMAGE = await imageRes.json();
-    } else {
-      const i2 = await fetch('image.json' + ts, { cache:'no-store' });
-      IMAGE = await i2.json();
-    }
-  }catch(e){
-    console.warn('[widget] image load failed, using blank logo', e);
-    IMAGE = {};
-  }
+    IMAGE = i.status==='fulfilled' ? await i.value.json() : {};
+  }catch{ IMAGE = {}; }
 
-  $('brand').textContent = FORM.headline || '';
-  $('powered').textContent = (CONFIG.editable?.poweredByLabel===false)?'':(FORM.poweredByLabel||'');
-  const logo=getLogoFrom(IMAGE); if(logo) $('logo').src=logo;
+  // Branding & labels
+  $('brand').textContent = FORM.headline || 'My Speaking Score – Widget';
+  $('powered').textContent =
+    (CONFIG.editable?.poweredByLabel === false)
+      ? ''
+      : (FORM.poweredByLabel || 'Powered by MSS Vox');
 
-  renderQ();
+  const logo = getLogoFrom(IMAGE);
+  if (logo) $('logo').src = logo;
+
+  // Labels
+  $('prevBtn').textContent   = FORM.previousButton || 'Previous';
+  $('nextBtn').textContent   = FORM.nextButton   || 'Next';
+  $('recBtn').textContent    = FORM.recordButton || 'Record your response';
+  $('stopBtn').textContent   = FORM.stopButton   || 'Stop';
+  $('submitBtn').textContent = FORM.SubmitForScoringButton || 'Submit for scoring';
+
   resetRecordingUI();
+  renderQuestion();
 }
 
-/* Render Q */
-function renderQ(){
-  const s = Array.isArray(FORM.survey)?FORM.survey:[];
-  if(!s.length){
-    $('counter').textContent='';
-    $('question').textContent='(No questions found)';
+/* ------------------------------------------------------------------
+   QUESTIONS
+------------------------------------------------------------------ */
+function renderQuestion(){
+  const s = Array.isArray(FORM?.survey) ? FORM.survey : [];
+  if (!s.length){
+    $('counter').textContent = '';
+    $('question').textContent = '(No questions configured)';
     return;
   }
-  idx = Math.max(0,Math.min(idx,s.length-1));
-  $('counter').textContent=`Question ${idx+1} of ${s.length}`;
-  $('question').textContent=s[idx];
+  idx = Math.max(0, Math.min(idx, s.length-1));
+  $('counter').textContent = `Question ${idx+1} of ${s.length}`;
+  $('question').textContent = s[idx];
 }
 
-/* Recording */
+/* ------------------------------------------------------------------
+   RECORDING
+------------------------------------------------------------------ */
 async function startRecording(){
-  if (uploadedFile){ return; }
+  if (uploadedFile) return;
   hideDebug();
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    chunks=[];
-    mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
-    mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
-    mediaRecorder.onstop=finalizeRecording;
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks = [];
+    mediaRecorder = new MediaRecorder(stream,{mimeType:'audio/webm'});
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    mediaRecorder.onstop = finalizeRecording;
 
-    recording=true;
-    t0=performance.now();
-    tick=setInterval(()=>{ $('timer').textContent=mmss(performance.now()-t0); },200);
+    recording = true;
+    const start = performance.now();
+    timerId = setInterval(()=>{
+      $('timer').textContent = mmss(performance.now() - start);
+    }, 200);
 
-    $('recBtn').disabled=true;
-    $('stopBtn').disabled=false;
-    $('submitBtn').disabled=true;
+    $('recBtn').disabled = true;
+    $('stopBtn').disabled = false;
+    $('submitBtn').disabled = true;
     $('recDot').classList.add('on');
-    $('recState').textContent='Recording…';
-    $('playerWrap').style.display='none';
+    $('recState').textContent = 'Recording…';
+    $('playerWrap').style.display = 'none';
 
     mediaRecorder.start();
     setStatus('Recording started');
   }catch(err){
     console.warn(err);
-    setStatus('Microphone permission denied',false);
+    setStatus('Microphone permission denied', false);
   }
 }
 function stopRecording(){
-  if(!mediaRecorder||!recording)return;
-  recording=false;
+  if (!mediaRecorder || !recording) return;
+  recording = false;
   try{ mediaRecorder.stop(); }catch{}
   stopTracks();
   clearTimer();
   $('recDot').classList.remove('on');
-  $('recState').textContent='Processing…';
-  $('stopBtn').disabled=true;
+  $('recState').textContent = 'Processing…';
+  $('stopBtn').disabled = true;
 }
 function finalizeRecording(){
-  blob=new Blob(chunks,{type:'audio/webm'});
+  blob = new Blob(chunks,{type:'audio/webm'});
   releaseBlobUrl();
-  url=URL.createObjectURL(blob);
+  url = URL.createObjectURL(blob);
 
-  $('player').src=url; $('playerWrap').style.display='block';
-  $('recState').textContent='Ready to review or submit';
-  $('recBtn').disabled=false;
-  $('submitBtn').disabled=false;
+  $('player').src = url;
+  $('playerWrap').style.display = 'block';
+  $('recState').textContent = 'Ready to play or submit';
+  $('recBtn').disabled = false;
+  $('submitBtn').disabled = false;
   setStatus('Recording ready');
 
   $('player').onloadedmetadata = () => {
@@ -461,27 +428,32 @@ function finalizeRecording(){
     const secs = String(minS%60).padStart(2,'0');
     const maxm = String(Math.floor(maxS/60)).padStart(2,'0');
     const maxs = String(maxS%60).padStart(2,'0');
-    $('lengthHint').textContent = `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
+    $('lengthHint').textContent =
+      `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
   };
 }
 
-/* Upload (mutually exclusive) */
-$('fileInput')?.addEventListener('change', async (e)=>{
+/* ------------------------------------------------------------------
+   FILE UPLOAD (mutually exclusive with recording)
+------------------------------------------------------------------ */
+$('fileInput')?.addEventListener('change', e=>{
   const f = e.target.files && e.target.files[0];
-  if (!f){ return; }
+  if (!f) return;
   uploadedFile = f;
-  $('fileBadge').textContent = `Selected: ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
-  $('clearFileBtn').style.display='inline-block';
+  $('fileBadge').textContent =
+    `Selected: ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+  $('clearFileBtn').style.display = 'inline-block';
   $('recBtn').disabled = true;
   $('stopBtn').disabled = true;
 
   releaseBlobUrl();
   url = URL.createObjectURL(f);
   $('player').src = url;
-  $('playerWrap').style.display='block';
+  $('playerWrap').style.display = 'block';
   $('submitBtn').disabled = false;
 
   hideDebug();
+
   $('player').onloadedmetadata = () => {
     const d = $('player').duration || 0;
     const { minS, maxS } = getDurationBounds();
@@ -489,7 +461,8 @@ $('fileInput')?.addEventListener('change', async (e)=>{
     const secs = String(minS%60).padStart(2,'0');
     const maxm = String(Math.floor(maxS/60)).padStart(2,'0');
     const maxs = String(maxS%60).padStart(2,'0');
-    $('lengthHint').textContent = `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
+    $('lengthHint').textContent =
+      `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
   };
 });
 $('clearFileBtn')?.addEventListener('click', ()=>{
@@ -500,17 +473,23 @@ $('clearFileBtn')?.addEventListener('click', ()=>{
   resetRecordingUI('File cleared — ready to record');
 });
 
-/* Submit */
-function getActiveAudioBlob(){ if (uploadedFile) return uploadedFile; if (blob) return blob; return null; }
+/* ------------------------------------------------------------------
+   SUBMIT TO MSS
+------------------------------------------------------------------ */
+function getActiveAudioBlob(){
+  if (uploadedFile) return uploadedFile;
+  if (blob) return blob;
+  return null;
+}
 
 async function submitRecording(){
-  const base = (CONFIG?.api?.baseUrl || '').trim();
-  const key  = (CONFIG?.api?.key || '').trim();
+  const base   = (CONFIG?.api?.baseUrl || '').trim();
+  const key    = (CONFIG?.api?.key || '').trim();
   const secret = (CONFIG?.api?.secret || '').trim();
 
-  if (!key || !secret) {
-    setStatus('Missing API key or X-API-SECRET in config.json', false);
-    appendAttempt({ error:'missing_credentials', key: !!key, secret: !!secret });
+  if (!key || !secret || !base){
+    setStatus('Missing API baseUrl/key/secret in config.json', false);
+    appendAttempt({ error:'missing_credentials', hasBase:!!base, hasKey:!!key, hasSecret:!!secret });
     return;
   }
 
@@ -529,13 +508,16 @@ async function submitRecording(){
     return;
   }
 
-  // Prepare audio
   setStatus('Preparing audio…');
   startProgress('Submitting');
+
   let wavBlob;
   try{
-    if (uploadedFile && /^audio\/wav/i.test(uploadedFile.type)) wavBlob = uploadedFile;
-    else wavBlob = await transcodeToWav(input);
+    if (uploadedFile && /^audio\/wav/i.test(uploadedFile.type)){
+      wavBlob = uploadedFile;
+    }else{
+      wavBlob = await transcodeToWav(input);
+    }
   }catch(e){
     stopProgress('Failed');
     setStatus('Could not prepare audio', false);
@@ -543,6 +525,7 @@ async function submitRecording(){
     return;
   }
 
+  // Optional pre-check
   const pre = await checkAccess(base, key);
   appendAttempt({ step:'check-access', ...pre });
   if (!pre.ok){
@@ -557,18 +540,30 @@ async function submitRecording(){
   const fd = new FormData();
   fd.append('file', wavBlob, uploadedFile ? uploadedFile.name : 'answer.wav');
 
-  let submitSec = 0;
   const tStart = performance.now();
+  let submitSec = 0;
+
   try{
-    const headers = { 'API-KEY': key, 'X-API-SECRET': secret, 'Accept':'application/json' };
-    const res = await fetch(endpoint, { method:'POST', headers, body: fd });
-    submitSec = Math.max(0, (performance.now()-tStart)/1000);
+    const headers = {
+      'API-KEY': key,
+      'X-API-SECRET': secret,
+      'Accept':'application/json'
+    };
+    const res  = await fetch(endpoint, { method:'POST', headers, body:fd });
+    submitSec  = Math.max(0, (performance.now()-tStart)/1000);
     const body = await res.json().catch(()=>({}));
+
     appendAttempt({
-      step:'vox', status:res.status, url:endpoint,
-      sent:{fileName: uploadedFile ? uploadedFile.name : 'answer.wav', fileType:wavBlob.type, fileSize:wavBlob.size },
-      headers: {
-        'X-RateLimit-Limit': res.headers.get('X-RateLimit-Limit'),
+      step:'vox',
+      status:res.status,
+      url:endpoint,
+      sent:{
+        fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
+        fileType: wavBlob.type,
+        fileSize: wavBlob.size
+      },
+      headers:{
+        'X-RateLimit-Limit':     res.headers.get('X-RateLimit-Limit'),
         'X-RateLimit-Remaining': res.headers.get('X-RateLimit-Remaining')
       },
       body
@@ -578,16 +573,19 @@ async function submitRecording(){
       stopProgress('Done');
       setStatus('Submitted ✅');
 
-      // Debug button appears only on success
+      // Debug button only on success
       $('debugBtnRow').style.display='flex';
       showDebug({ received: body });
 
       // Dashboard
       openDashboard();
-      try { dashboardWindow?.postMessage({ type:'mss-results', payload: body }, '*'); }
-      catch(e){ console.warn('dash postMessage failed', e); }
+      try{
+        dashboardWindow?.postMessage({ type:'mss-results', payload: body }, '*');
+      }catch(e){
+        console.warn('dash postMessage failed', e);
+      }
 
-      // ---- LOGGING (with indicator) ----
+      // Logging (CSV via Render)
       logResultToCsv(body, {
         fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
         lengthSec: Math.round(dur || 0),
@@ -601,32 +599,40 @@ async function submitRecording(){
       setStatus(`Submit failed (${res.status})`, false);
     }
   }catch(err){
+    console.warn(err);
     stopProgress('Failed');
     setStatus('Network error', false);
     appendAttempt({error:String(err)});
   }
 }
 
-/* Logging helper with UI feedback */
+/* ------------------------------------------------------------------
+   LOGGING TO CSV (Render)
+------------------------------------------------------------------ */
 async function logResultToCsv(mssBody, meta){
   const enabled = Boolean(CONFIG?.logger?.enabled) && !!CONFIG?.logger?.url;
-  if (!enabled) return;
+  const url = enabled
+    ? CONFIG.logger.url
+    : `${SERVICE_BASE.replace(/\/+$/,'')}/log/submission`;
+
+  if (!enabled && !CONFIG.logger?.url){
+    // If logger disabled and no default, just skip silently
+    return;
+  }
 
   const ipPlaceholder = ''; // server fills real IP
   const ts = new Date().toISOString();
 
-  // Extract scores safely
   const toefl = mssBody?.elsa_results?.toefl_score ?? mssBody?.toefl_score ?? '';
   const ielts = mssBody?.elsa_results?.ielts_score ?? mssBody?.ielts_score ?? '';
   const pte   = mssBody?.elsa_results?.pte_score   ?? mssBody?.pte_score   ?? '';
   const cefr  = (mssBody?.elsa_results?.cefr_level || mssBody?.cefr_level || '').toString().toUpperCase();
 
-  // Transcript + WPM (best-effort: use top-level transcript if present)
   const transcript = (mssBody?.transcript || '').toString().trim();
   let wpm = '';
   try{
-    if (transcript) {
-      const words = transcript.split(/\s+/).filter(Boolean).length;
+    if (transcript){
+      const words   = transcript.split(/\s+/).filter(Boolean).length;
       const minutes = Math.max(0.01, (meta.lengthSec || 0) / 60);
       wpm = Math.round(words / minutes);
     }
@@ -635,7 +641,7 @@ async function logResultToCsv(mssBody, meta){
   const payload = {
     timestamp: ts,
     ip: ipPlaceholder,
-    userId: '',                      // fill later if desired
+    userId: '',
     fileName: meta.fileName || '',
     lengthSec: meta.lengthSec || '',
     submitTime: meta.submitTime || '',
@@ -645,7 +651,6 @@ async function logResultToCsv(mssBody, meta){
     wpm
   };
 
-  const url = CONFIG.logger.url;
   const statusEl = $('logStatus');
   try{
     statusEl.textContent = 'Logging…';
@@ -659,7 +664,7 @@ async function logResultToCsv(mssBody, meta){
     if (res.ok && j?.ok){
       statusEl.textContent = 'Logged ✓';
       statusEl.className = 'mss-logstatus ok';
-      console.log('📝 Logged:', j.file);
+      console.log('Logged to CSV:', j.file);
     }else{
       statusEl.textContent = 'Log failed';
       statusEl.className = 'mss-logstatus err';
@@ -672,43 +677,50 @@ async function logResultToCsv(mssBody, meta){
   }
 }
 
-/* Dashboard modal */
+/* ------------------------------------------------------------------
+   DASHBOARD MODAL
+------------------------------------------------------------------ */
 function openDashboard(){
   const m = $('dashModal');
   const f = $('dashFrame');
   dashboardWindow = f.contentWindow;
-  m.style.display='flex'; m.setAttribute('aria-hidden','false');
+  m.style.display='flex';
+  m.setAttribute('aria-hidden','false');
 }
 function closeDashboard(){
   const m = $('dashModal');
-  m.style.display='none'; m.setAttribute('aria-hidden','true');
+  m.style.display='none';
+  m.setAttribute('aria-hidden','true');
 }
 $('closeDash').addEventListener('click', closeDashboard);
+$('dashModal').addEventListener('click', (e)=>{
+  if (e.target === $('dashModal')) closeDashboard();
+});
 
-/* Wire */
+/* ------------------------------------------------------------------
+   WIRES
+------------------------------------------------------------------ */
 window.addEventListener('DOMContentLoaded', async ()=>{
   await loadAll();
-  $('recBtn').addEventListener('click',startRecording);
-  $('stopBtn').addEventListener('click',stopRecording);
-  $('submitBtn').addEventListener('click',submitRecording);
-  $('prevBtn').addEventListener('click',()=>{
-    idx--;
-    renderQ();
+
+  $('recBtn').addEventListener('click', startRecording);
+  $('stopBtn').addEventListener('click', stopRecording);
+  $('submitBtn').addEventListener('click', submitRecording);
+
+  $('prevBtn').addEventListener('click', ()=>{
+    idx--; renderQuestion();
     resetRecordingUI('Not recording');
     hideDebug();
   });
-  $('nextBtn').addEventListener('click',()=>{
-    idx++;
-    renderQ();
+  $('nextBtn').addEventListener('click', ()=>{
+    idx++; renderQuestion();
     resetRecordingUI('Not recording');
     hideDebug();
   });
+
   $('toggleDebug').addEventListener('click', ()=>{
     const w = $('debugWrap');
-    w.style.display = (w.style.display==='block'?'none':'block');
-  });
-  $('dashModal').addEventListener('click', (e)=>{
-    if (e.target === $('dashModal')) closeDashboard();
+    w.style.display = (w.style.display === 'block' ? 'none' : 'block');
   });
 });
 </script>
