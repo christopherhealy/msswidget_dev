@@ -1,4 +1,5 @@
 // server.js (ESM, works with "type": "module")
+// server.js (ESM, works with "type": "module")
 import express from "express";
 import cors from "cors";
 import fs from "fs/promises";
@@ -10,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
 const SRC_DIR = path.join(ROOT, "src");
 const PUBLIC_DIR = path.join(ROOT, "public");
+const THEMES_DIR = path.join(ROOT, "themes");        // <— NEW
 
 // CSV log in /tmp (ephemeral on free Render)
 const LOG_CSV = "/tmp/msswidget-log.csv";
@@ -28,9 +30,18 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (for local testing of Widget.html etc.)
+// Serve static files
 app.use(express.static(PUBLIC_DIR));
 
+// Explicit /themes mount, tries public/themes first, then root/themes
+app.use(
+  "/themes",
+  express.static(path.join(PUBLIC_DIR, "themes"))
+);
+app.use(
+  "/themes",
+  express.static(THEMES_DIR)
+);
 /* ---------- helpers ---------- */
 
 async function ensureSrcDir() {
