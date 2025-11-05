@@ -520,16 +520,54 @@ console.log(`🧩 MSS Widget running in ${mode} mode`);
       $('finishCancel').onclick = ()=>{ ov.style.display='none'; ov.setAttribute('aria-hidden','true'); resolve('cancel'); };
     });
   }
-  async function finishedFlow(){
-    const choice = await showFinishDialog();
-    if (choice === 'save'){
-      const r = await saveToFilePicker(getMerged(), 'form.json');
-      if (r==='saved') setStatus('Saved to file');
-      else if (r==='download') setStatus('Downloaded');
-      window.location.href = 'index.html';
-    } else if (choice === 'nosave'){
-      window.location.href = 'index.html';
+
+  // -------- Save to SERVER (Render) with file fallback --------
+  async function saveToServer(){
+    const payload = getMerged();
+
+    try{
+      const res = await fetch(`${SERVICE_BASE}/config/forms`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          // If you later add ADMIN_WRITE_KEY on Render, you can send it here:
+          // 'X-ADMIN-KEY': 'your-admin-key-here'
+        },
+        body: JSON.stringify(payload, null, 2)
+      });
+
+      if (!res.ok){
+        throw new Error('HTTP ' + res.status);
+      }
+
+      setStatus('Saved to server');
+      return 'server';
+    }catch(err){
+      console.error('Remote save failed, falling back to file:', err);
+      setStatus('Server save failed, saving to file instead', false);
+      const r = await saveToFilePicker(payload, 'form.json');
+      return r; // 'saved' | 'download' | 'canceled'
     }
+  }
+
+   async function finishedFlow(){
+    const choice = await showFinishDialog();
+
+    if (choice === 'save'){
+      // First try saving to the central server (Render)
+      const r = await saveToServer();
+      if (r === 'server'){
+        setStatus('Saved to server');
+      } else if (r === 'saved'){
+        setStatus('Saved to file');
+      } else if (r === 'download'){
+        setStatus('Downloaded');
+      }
+      await smartGoHome();
+    } else if (choice === 'nosave'){
+      await smartGoHome();
+    }
+    // 'cancel' → do nothing
   }
 
   /* ========= tiny confirms ========= */
