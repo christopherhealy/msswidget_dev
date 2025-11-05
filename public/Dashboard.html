@@ -321,6 +321,53 @@
     color:var(--muted);
     margin-top:8px;
   }
+
+  /* Debug panel */
+  .debug-card{
+    margin-top:16px;
+    border-radius:14px;
+    border:1px solid var(--edge);
+    background:#f9fafb;
+    padding:10px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .debug-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .debug-toggle{
+    border-radius:999px;
+    border:1px solid var(--edge);
+    background:#fff;
+    padding:4px 10px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .debug-box{
+    margin-top:8px;
+    border-radius:10px;
+    border:1px solid var(--edge);
+    background:#111827;
+    color:#e5e7eb;
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .debug-box.open{
+    max-height:260px;
+    overflow:auto;
+  }
+  .debug-box pre{
+    margin:0;
+    padding:8px 10px;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:11px;
+    white-space:pre;
+  }
 </style>
 </head>
 <body>
@@ -462,6 +509,17 @@
           This space is reserved for a future dashboard graphic (rainbow, pointer, etc.).
         </div>
 
+        <!-- DEBUG PANEL -->
+        <div class="debug-card">
+          <div class="debug-top">
+            <div>Debug: MSS JSON payload (hidden from students)</div>
+            <button id="debugToggle" class="debug-toggle" type="button">Show MSS result</button>
+          </div>
+          <div id="debugBox" class="debug-box">
+            <pre id="debugPre">(No MSS result yet)</pre>
+          </div>
+        </div>
+
         <div class="footnote">
           Values shown here come from the MSS API response. The full JSON is logged separately for reporting.
         </div>
@@ -469,6 +527,7 @@
     </div>
   </div>
 </div>
+
 <script src="js/mss-core.js"></script>
 <script>
   // Close button
@@ -490,10 +549,9 @@
     el.textContent = value == null || value === '' ? '–' : value;
   };
 
-  // Map **normalized** MSSCore payload -> your current DOM
+  // Render normalized MSSCore payload into the UI
   function renderDashboard(m){
-    // Headline / overall
-    const cefr = m.cefr || '–';
+    const cefr  = m.cefr || '–';
     const score = m.score;
 
     const headLevel = document.querySelector('#cefrHeadline .level');
@@ -506,12 +564,12 @@
     setText('badgeIelts', `IELTS ${m.ielts ?? '–'}`);
     setText('badgePte',   `PTE ${m.pte   ?? '–'}`);
 
-    // Test equivalencies (left column)
+    // Test equivalencies
     setText('pillToefl', m.toefl);
     setText('pillIelts', m.ielts);
     setText('pillPte',   m.pte);
 
-    // Snapshot tiles (right column)
+    // Snapshot tiles
     setText('snapCefr',  cefr);
     setText('snapScore', score != null ? score.toFixed(2) : '–');
     setText('snapToefl', m.toefl);
@@ -531,8 +589,8 @@
     // Transcript
     const rawTx  = m.transcript || '';
     const plain  = MSSCore.stripTranscript(rawTx);
-    const txBody = $('txBody');
-    const txText = $('txText');
+    const txBody   = $('txBody');
+    const txText   = $('txText');
     const txToggle = $('txToggle');
     const txLabel  = $('txToggleLabel');
 
@@ -549,7 +607,7 @@
     }
   }
 
-  // Show/Hide transcript
+  // Transcript toggle
   function setupTranscriptToggle(){
     const toggle = $('txToggle');
     const body   = $('txBody');
@@ -564,13 +622,44 @@
     });
   }
 
+  // --- Debug JSON panel ---
+  let lastRawMessage = null;
+
+  function renderDebugJson(){
+    const pre = $('debugPre');
+    if (!pre) return;
+    if (!lastRawMessage){
+      pre.textContent = '(No MSS result yet)';
+      return;
+    }
+    try{
+      pre.textContent = JSON.stringify(lastRawMessage, null, 2);
+    }catch(e){
+      pre.textContent = String(lastRawMessage);
+    }
+  }
+
+  function setupDebugToggle(){
+    const btn = $('debugToggle');
+    const box = $('debugBox');
+    if (!btn || !box) return;
+
+    btn.addEventListener('click', () => {
+      const open = !box.classList.contains('open');
+      box.classList.toggle('open', open);
+      btn.textContent = open ? 'Hide MSS result' : 'Show MSS result';
+    });
+  }
+
   // Real data from Widget
   MSSCore.listenForMssResult((normalized, raw) => {
     console.log('📦 Dashboard received MSS result:', normalized, raw);
+    lastRawMessage = raw || normalized;
     renderDashboard(normalized);
+    renderDebugJson();
   });
 
-  // Mock when opened directly (no parent posting message)
+  // Mock when opened directly (no parent)
   function maybeRenderMock(){
     const isEmbedded = window.opener || window !== window.parent;
     if (isEmbedded) return;
@@ -593,11 +682,14 @@
     });
 
     console.log('🧪 Dashboard mock payload', mock);
+    lastRawMessage = mock;
     renderDashboard(mock);
+    renderDebugJson();
   }
 
   window.addEventListener('DOMContentLoaded', () => {
     setupTranscriptToggle();
+    setupDebugToggle();
     maybeRenderMock();
   });
 </script>
