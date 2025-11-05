@@ -4,516 +4,335 @@
   <meta charset="UTF-8" />
   <title>MSS Gauge Mock</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
     :root {
-      --apple-accent: #007aff;
-      --apple-text:  #111827;
-      --apple-muted: #6b7280;
-      --apple-edge:  rgba(255,255,255,.45);
-      --apple-bg:    #eef1f6;
-      --apple-glass: rgba(255,255,255,.65);
-      --apple-shadow: 0 20px 50px rgba(0,0,0,.10);
-      --apple-radius: 20px;
-      --apple-focus: rgba(0,122,255,.35);
-
-      /* Gauge-specific */
-      --gauge-track: #e5e7eb;
-      --gauge-fill:  #22c55e;
-      --gauge-fill-mid: #eab308;
-      --gauge-fill-low: #f97316;
-      --gauge-value: 0;   /* 0–100 */
-      --gauge-cefr: "–";
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --edge: #e5e7eb;
+      --muted: #6b7280;
+      --text: #111827;
+      --accent: #0f766e;
+      --accent-strong: #047857;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     }
-
     * { box-sizing: border-box; }
 
     html, body {
-      height: 100%;
       margin: 0;
       padding: 0;
+      height: 100%;
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, #e0f2fe 0, #f9fafb 45%, #e5e7eb 100%);
+      color: var(--text);
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                   "SF Pro Display", "Segoe UI", system-ui, sans-serif;
-      background: linear-gradient(180deg, #f6f7fb 0%, #e9edf6 100%);
-      color: var(--apple-text);
-      display: grid;
-      place-items: center;
-      padding: max(16px, env(safe-area-inset-top))
-               max(16px, env(safe-area-inset-right))
-               max(16px, env(safe-area-inset-bottom))
-               max(16px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
     }
 
     .shell {
-      width: 480px;
-      max-width: 96vw;
-      border-radius: var(--apple-radius);
-      background: var(--apple-glass);
-      border: 1px solid var(--apple-edge);
-      box-shadow: var(--apple-shadow);
-      backdrop-filter: saturate(180%) blur(16px);
-      -webkit-backdrop-filter: saturate(180%) blur(16px);
-      padding: 18px 18px 16px;
+      width: 100%;
+      max-width: 640px;
+      background: var(--card);
+      border-radius: 18px;
+      border: 1px solid var(--edge);
+      box-shadow: var(--shadow);
+      padding: 18px 20px 20px;
     }
 
-    header {
+    .header {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
     }
 
-    header h1 {
-      font-size: 16px;
-      margin: 0;
+    .title {
+      font-size: 15px;
       font-weight: 700;
     }
 
-    header .tagline {
-      font-size: 12px;
-      color: var(--apple-muted);
-    }
-
-    .gauge-card {
-      margin-top: 10px;
-      border-radius: 16px;
-      padding: 16px 18px 14px;
-      border: 1px solid rgba(255,255,255,.7);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.7) 100%),
-        radial-gradient(100% 120% at 50% 0, rgba(0,122,255,.16), transparent 60%);
-    }
-
-    .gauge-title {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--apple-muted);
-      margin-bottom: 4px;
-    }
-
-    .gauge-main-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-      gap: 10px;
-      align-items: center;
-    }
-
-    @media (max-width: 520px) {
-      .gauge-main-row {
-        grid-template-columns: 1fr;
-      }
+    .tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--edge);
+      background: #f9fafb;
+      color: var(--muted);
     }
 
     .gauge-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 260px;
-      margin: 0 auto;
-    }
-
-    /* SVG takes full width */
-    .gauge-wrap svg {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    .gauge-overlay {
-      position: absolute;
-      inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      padding-bottom: 12px; /* push slightly upward into arc */
+      gap: 12px;
+      padding: 10px 6px 6px;
     }
 
-    .gauge-score {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: .04em;
+    .gauge {
+      position: relative;
+      width: 260px;
+      max-width: 100%;
+      aspect-ratio: 2 / 1;
     }
 
-    .gauge-score span {
-      font-size: 18px;
-      font-weight: 600;
-      margin-left: 2px;
+    .gauge svg {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
-    .gauge-label {
-      font-size: 13px;
-      color: var(--apple-muted);
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 90%;
+      font-size: 11px;
+      color: var(--muted);
       margin-top: 2px;
     }
 
-    .gauge-cefr-pill {
-      margin-top: 8px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: rgba(249,250,251,.9);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--apple-text);
-    }
-
-    .gauge-meta {
-      font-size: 13px;
-      color: var(--apple-muted);
-    }
-    .gauge-meta strong {
-      display: block;
-      font-size: 14px;
-      color: var(--apple-text);
-      margin-bottom: 4px;
-    }
-
-    .legend-row {
+    .value-row {
+      margin-top: 4px;
       display: flex;
-      gap: 10px;
+      justify-content: center;
+      gap: 6px;
+      align-items: baseline;
+    }
+
+    .value-main {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: .03em;
+    }
+
+    .value-main span {
+      color: var(--accent-strong);
+    }
+
+    .value-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .cefr-badges {
+      margin-top: 8px;
+      display: flex;
       flex-wrap: wrap;
-      margin-top: 10px;
+      gap: 6px;
+      justify-content: center;
       font-size: 11px;
-      color: var(--apple-muted);
-    }
-    .legend-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(249,250,251,.95);
-      border: 1px solid rgba(209,213,219,.8);
-    }
-    .legend-swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: #e5e7eb;
-    }
-    .legend-swatch.low  { background: var(--gauge-fill-low); }
-    .legend-swatch.mid  { background: var(--gauge-fill-mid); }
-    .legend-swatch.high { background: var(--gauge-fill); }
-
-    /* ---------- Controls ---------- */
-    .controls {
-      margin-top: 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(209,213,219,.8);
-      background: rgba(248,250,252,.9);
-      padding: 10px 12px;
-      font-size: 13px;
     }
 
-    .controls h2 {
-      font-size: 13px;
-      margin: 0 0 4px 0;
+    .cefr-badge {
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--edge);
+      background: #f9fafb;
+      color: var(--muted);
+    }
+
+    .cefr-badge.active {
+      background: #ecfdf5;
+      border-color: #bbf7d0;
+      color: var(--accent-strong);
       font-weight: 600;
     }
 
-    .ctrl-row {
-      display: grid;
-      grid-template-columns: minmax(0,1.2fr) minmax(0,0.9fr);
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    @media (max-width: 520px) {
-      .ctrl-row {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    label {
-      display: block;
+    .footer {
+      margin-top: 12px;
       font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--apple-muted);
-      margin-bottom: 4px;
+      color: var(--muted);
+      text-align: center;
     }
 
-    input[type="range"] {
-      width: 100%;
-    }
-
-    select, input[type="range"] {
-      font: inherit;
-    }
-
-    .ctrl-inline {
+    .controls {
+      margin-top: 12px;
       display: flex;
-      gap: 6px;
-      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
       font-size: 12px;
     }
 
-    .pill-out {
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--apple-muted);
+    .controls input[type="range"] {
+      width: 160px;
     }
 
-    .pill-out span {
-      font-weight: 600;
-      color: var(--apple-text);
-    }
-
-    /* ---------- SVG gauge tweaks ---------- */
-
-    /* semicircle base track */
-    .g-track {
-      stroke: var(--gauge-track);
-      stroke-width: 10;
-      fill: none;
-      stroke-linecap: round;
-    }
-
-    /* active arc using stroke-dasharray */
-    .g-fill {
-      stroke: var(--gauge-fill);
-      stroke-width: 10;
-      fill: none;
-      stroke-linecap: round;
-      transform-origin: 50% 100%;
-      transform: rotate(180deg);
-      stroke-dasharray: 0 251.2;
-      transition: stroke-dasharray .35s ease, stroke .25s ease;
-    }
-
-    /* pointer needle (simple line) */
-    .g-needle {
-      stroke: #0f172a;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      transform-origin: 50% 100%;
-      transform: rotate(-90deg);
-      transition: transform .35s ease;
-    }
-
-    .g-knob {
-      fill: #0f172a;
-    }
-
-    /* footer */
-    .foot {
-      margin-top: 10px;
-      font-size: 10px;
-      color: var(--apple-muted);
-      text-align: right;
+    .controls select {
+      border-radius: 999px;
+      border: 1px solid var(--edge);
+      padding: 3px 8px;
+      font-size: 12px;
+      background: #f9fafb;
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header>
-      <div>
-        <h1>MSS Gauge Mock</h1>
-        <div class="tagline">Standalone visual for testing CEFR / score gauges.</div>
-      </div>
-    </header>
+    <div class="header">
+      <div class="title">CEFR overview</div>
+      <div class="tag">Gauge mock · v0.1</div>
+    </div>
 
-    <section class="gauge-card">
-      <div class="gauge-title">Overall speaking strength</div>
-
-      <div class="gauge-main-row">
-        <!-- SVG gauge -->
-        <div class="gauge-wrap">
-          <!-- viewBox 0 0 200 120 → semicircle from 10,110 to 190,110 -->
-          <svg viewBox="0 0 200 120" aria-hidden="true">
-            <!-- base semicircle track -->
-            <path
-              class="g-track"
-              d="M 10 110 A 90 90 0 0 1 190 110" />
-
-            <!-- active arc (same path) -->
-            <path
-              id="gFill"
-              class="g-fill"
-              d="M 10 110 A 90 90 0 0 1 190 110" />
-
-            <!-- needle line: from center (100,110) up to 100,28 -->
-            <line
-              id="gNeedle"
-              class="g-needle"
-              x1="100" y1="110"
-              x2="100" y2="28" />
-
-            <!-- knob at center -->
-            <circle
-              class="g-knob"
-              cx="100" cy="110" r="3.5" />
-          </svg>
-
-          <!-- overlayed text -->
-          <div class="gauge-overlay">
-            <div id="gScore" class="gauge-score">0<span>/100</span></div>
-            <div id="gLabel" class="gauge-label">Mock only – not wired to API</div>
-            <div id="gCefrPill" class="gauge-cefr-pill">CEFR –</div>
-          </div>
-        </div>
-
-        <!-- Meta text -->
-        <div class="gauge-meta">
-          <strong id="gHeadline">Beginner</strong>
-          <div id="gDescription">
-            Use the controls below to explore how the gauge behaves for different
-            scores and CEFR levels. This mock is independent of the live MSS API.
-          </div>
-
-          <div class="legend-row">
-            <div class="legend-chip">
-              <span class="legend-swatch low"></span> Low range
-            </div>
-            <div class="legend-chip">
-              <span class="legend-swatch mid"></span> Mid range
-            </div>
-            <div class="legend-chip">
-              <span class="legend-swatch high"></span> High range
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Controls -->
-    <section class="controls">
-      <h2>Test controls (local only)</h2>
-      <div class="ctrl-row">
-        <div>
-          <label for="scoreRange">Score (0 – 100)</label>
-          <input id="scoreRange" type="range" min="0" max="100" step="1" value="72" />
-          <div class="ctrl-inline">
-            <span>Current score:</span>
-            <strong id="scoreValue">72</strong>
-          </div>
-        </div>
-        <div>
-          <label for="cefrSelect">CEFR level</label>
-          <select id="cefrSelect">
-            <option value="">Auto (from score)</option>
-            <option value="A1">A1</option>
-            <option value="A2">A2</option>
-            <option value="B1">B1</option>
-            <option value="B2">B2</option>
-            <option value="C1">C1</option>
-            <option value="C2">C2</option>
-          </select>
-          <div class="ctrl-inline" style="margin-top:6px;">
-            <span>Estimated band:</span>
-            <strong id="bandLabel">Upper-intermediate</strong>
-          </div>
-        </div>
+    <div class="gauge-wrap">
+      <!-- SVG gauge -->
+      <div class="gauge">
+        <svg viewBox="0 0 200 100" aria-hidden="true">
+          <!-- background arc -->
+          <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="100%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#f97316"/>  <!-- A1 orange -->
+              <stop offset="40%"  stop-color="#eab308"/>  <!-- B1 amber -->
+              <stop offset="70%"  stop-color="#22c55e"/>  <!-- B2/C1 green -->
+              <stop offset="100%" stop-color="#0ea5e9"/>  <!-- C2 cyan -->
+            </linearGradient>
+          </defs>
+          <path
+            id="arc-bg"
+            d="M10 100 A90 90 0 0 1 190 100"
+            fill="none"
+            stroke="url(#gaugeGradient)"
+            stroke-width="14"
+            stroke-linecap="round"
+            opacity="0.9"
+          />
+          <!-- grey inner track -->
+          <path
+            d="M20 100 A80 80 0 0 1 180 100"
+            fill="none"
+            stroke="#e5e7eb"
+            stroke-width="12"
+            stroke-linecap="round"
+          />
+          <!-- pointer line (we move this with JS) -->
+          <line
+            id="pointer"
+            x1="100" y1="100"
+            x2="100" y2="28"
+            stroke="#111827"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+          <!-- pointer dot -->
+          <circle id="pointerDot" cx="100" cy="24" r="4" fill="#111827"/>
+        </svg>
       </div>
 
-      <div class="pill-out">
-        Debug view: score <span id="dbgScore">72</span>,
-        mapped CEFR <span id="dbgCefr">C1</span>,
-        needle angle <span id="dbgAngle">54°</span>.
+      <!-- A1–C2 labels -->
+      <div class="gauge-labels">
+        <span>A1</span>
+        <span>A2</span>
+        <span>B1</span>
+        <span>B2</span>
+        <span>C1</span>
+        <span>C2</span>
       </div>
-    </section>
 
-    <div class="foot">
-      MSS Gauge Mock • v0.1
+      <!-- CEFR text value -->
+      <div class="value-row">
+        <div class="value-main">CEFR <span id="valCefr">C2</span></div>
+        <div class="value-sub" id="valScore">MySpeakingScore: 3.18</div>
+      </div>
+
+      <div class="cefr-badges">
+        <div class="cefr-badge" data-level="A1">A1 Beginner</div>
+        <div class="cefr-badge" data-level="A2">A2 Elementary</div>
+        <div class="cefr-badge" data-level="B1">B1 Intermediate</div>
+        <div class="cefr-badge" data-level="B2">B2 Upper-int</div>
+        <div class="cefr-badge" data-level="C1">C1 Advanced</div>
+        <div class="cefr-badge active" data-level="C2">C2 Proficient</div>
+      </div>
+    </div>
+
+    <!-- Controls for playing with it locally -->
+    <div class="controls">
+      <label>
+        CEFR:
+        <select id="inputCefr">
+          <option>A1</option>
+          <option>A2</option>
+          <option>B1</option>
+          <option>B2</option>
+          <option>C1</option>
+          <option selected>C2</option>
+        </select>
+      </label>
+      <label>
+        MSS score:
+        <input id="inputScore" type="range" min="1.0" max="4.0" step="0.01" value="3.18" />
+      </label>
+      <span id="scoreLabel">3.18</span>
+    </div>
+
+    <div class="footer">
+      Stand-alone mock gauge for development and visual testing only.  
+      Later we’ll embed this into the main Dashboard and drive it from real MSS results.
     </div>
   </div>
 
   <script>
-    (function(){
-      const HALF_CIRC = 251.2; // approx length of semicircle path (r=90)
-      const scoreRange = document.getElementById('scoreRange');
-      const scoreValue = document.getElementById('scoreValue');
-      const cefrSelect = document.getElementById('cefrSelect');
-      const bandLabel  = document.getElementById('bandLabel');
+    // Map CEFR levels to an angle along the semicircle (in degrees).
+    // -90° = far left, +90° = far right
+    const levelAngles = {
+      A1: -80,
+      A2: -48,
+      B1: -16,
+      B2: 16,
+      C1: 48,
+      C2: 80
+    };
 
-      const gFill   = document.getElementById('gFill');
-      const gNeedle = document.getElementById('gNeedle');
-      const gScore  = document.getElementById('gScore');
-      const gLabel  = document.getElementById('gLabel');
-      const gCefrPill = document.getElementById('gCefrPill');
-      const gHeadline = document.getElementById('gHeadline');
-      const gDescription = document.getElementById('gDescription');
+    function updateGauge(level, score) {
+      const angle = levelAngles[level] ?? 0;
 
-      const dbgScore = document.getElementById('dbgScore');
-      const dbgCefr  = document.getElementById('dbgCefr');
-      const dbgAngle = document.getElementById('dbgAngle');
+      // Convert angle (deg) to radians
+      const rad = (angle * Math.PI) / 180;
+      const cx = 100, cy = 100, r = 72;
 
-      function scoreToCefr(score){
-        if (score >= 90) return 'C2';
-        if (score >= 80) return 'C1';
-        if (score >= 70) return 'B2';
-        if (score >= 55) return 'B1';
-        if (score >= 40) return 'A2';
-        if (score >= 20) return 'A1';
-        return 'A1';
-      }
+      const x = cx + r * Math.sin(rad);
+      const y = cy - r * Math.cos(rad);
 
-      function cefrDescriptor(cefr){
-        switch((cefr || '').toUpperCase()){
-          case 'C2': return ['Near-native', 'Able to handle complex, nuanced communication with ease.'];
-          case 'C1': return ['Advanced', 'Comfortable with academic and professional topics. Minor slips only.'];
-          case 'B2': return ['Upper-intermediate', 'Can interact with fluency on a wide range of subjects.'];
-          case 'B1': return ['Intermediate', 'Good control in familiar situations; some gaps remain.'];
-          case 'A2': return ['Basic user', 'Can discuss simple topics with some hesitation.'];
-          case 'A1': return ['Beginner', 'Limited to very simple expressions and familiar phrases.'];
-          default:   return ['Unmapped', 'No CEFR band selected—using score only.'];
-        }
-      }
+      const pointer = document.getElementById("pointer");
+      const pointerDot = document.getElementById("pointerDot");
 
-      function colourForScore(score){
-        if (score >= 80) return getComputedStyle(document.documentElement)
-          .getPropertyValue('--gauge-fill') || '#22c55e';
-        if (score >= 55) return getComputedStyle(document.documentElement)
-          .getPropertyValue('--gauge-fill-mid') || '#eab308';
-        return getComputedStyle(document.documentElement)
-          .getPropertyValue('--gauge-fill-low') || '#f97316';
-      }
+      pointer.setAttribute("x2", x.toFixed(2));
+      pointer.setAttribute("y2", y.toFixed(2));
+      pointerDot.setAttribute("cx", x.toFixed(2));
+      pointerDot.setAttribute("cy", y.toFixed(2));
 
-      function updateGauge(){
-        const score = Number(scoreRange.value) || 0;
-        scoreValue.textContent = score;
-        dbgScore.textContent = score;
+      document.getElementById("valCefr").textContent = level;
+      document.getElementById("valScore").textContent =
+        score != null ? `MySpeakingScore: ${score.toFixed(2)}` : "MySpeakingScore: –";
 
-        // Determine CEFR – either from explicit select, or score mapping
-        const explicit = cefrSelect.value || '';
-        const cefr = explicit || scoreToCefr(score);
-        dbgCefr.textContent = cefr || '–';
+      // highlight badge
+      document.querySelectorAll(".cefr-badge").forEach(b => {
+        b.classList.toggle("active", b.dataset.level === level);
+      });
+    }
 
-        // Set stroke length
-        const frac = Math.max(0, Math.min(1, score / 100));
-        const dash = (HALF_CIRC * frac).toFixed(1);
-        gFill.style.strokeDasharray = `${dash} ${HALF_CIRC}`;
-        gFill.style.stroke = colourForScore(score);
+    // Wire controls
+    const inputCefr = document.getElementById("inputCefr");
+    const inputScore = document.getElementById("inputScore");
+    const scoreLabel = document.getElementById("scoreLabel");
 
-        // Needle angle: -90° (left) to +90° (right)
-        const angle = -90 + frac * 180;
-        gNeedle.style.transform = `rotate(${angle}deg)`;
-        dbgAngle.textContent = `${angle.toFixed(0)}°`;
+    inputCefr.addEventListener("change", () => {
+      const lvl = inputCefr.value;
+      const s = parseFloat(inputScore.value);
+      scoreLabel.textContent = s.toFixed(2);
+      updateGauge(lvl, s);
+    });
 
-        // Text overlays
-        gScore.innerHTML = `${score}<span>/100</span>`;
-        const [title, desc] = cefrDescriptor(cefr);
-        gHeadline.textContent = title;
-        gDescription.textContent = desc;
-        gCefrPill.textContent = `CEFR ${cefr || '–'}`;
+    inputScore.addEventListener("input", () => {
+      const s = parseFloat(inputScore.value);
+      scoreLabel.textContent = s.toFixed(2);
+      updateGauge(inputCefr.value, s);
+    });
 
-        // Band label under controls
-        bandLabel.textContent = title;
-      }
-
-      scoreRange.addEventListener('input', updateGauge);
-      cefrSelect.addEventListener('change', updateGauge);
-
-      // Initial render
-      updateGauge();
-    })();
+    // Initial
+    updateGauge("C2", 3.18);
   </script>
 </body>
 </html>
