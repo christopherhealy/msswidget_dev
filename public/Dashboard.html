@@ -652,12 +652,38 @@
   }
 
   // Real data from Widget
-  MSSCore.listenForMssResult((normalized, raw) => {
-    console.log('📦 Dashboard received MSS result:', normalized, raw);
-    lastRawMessage = raw || normalized;
-    renderDashboard(normalized);
-    renderDebugJson();
-  });
+  // Real data from Widget – generic postMessage listener
+function handleMssMessage(ev) {
+  const d = ev.data;
+  if (!d) return;
+
+  // Accept several type variants, including current widget "mss-results"
+  const isTyped =
+    d.type === 'mss:result' ||
+    d.type === 'mss-result' ||
+    d.type === 'mssScore'   ||
+    d.type === 'mss-results';
+
+  let raw = null;
+
+  if (isTyped) {
+    raw = d.payload || d.result || d;
+  } else if (d.received || d.elsa_results || d.score) {
+    // fall-back: looks like an MSS payload even without a type
+    raw = d;
+  }
+
+  if (!raw) return;
+
+  const normalized = (window.MSSCore && MSSCore.normalizeMssPayload)
+    ? MSSCore.normalizeMssPayload(raw)
+    : raw;
+
+  console.log('📦 Dashboard received MSS result:', normalized, raw);
+  renderDashboard(normalized);
+}
+
+window.addEventListener('message', handleMssMessage);
 
   // Mock when opened directly (no parent)
   function maybeRenderMock(){
@@ -688,10 +714,14 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    setupTranscriptToggle();
-    setupDebugToggle();
+  setupTranscriptToggle();
+
+  const isEmbedded = (window.opener || window !== window.parent);
+  if (!isEmbedded) {
+    // opened directly in a tab → show the mock sample
     maybeRenderMock();
-  });
+  }
+});
 </script>
 </body>
 </html>
