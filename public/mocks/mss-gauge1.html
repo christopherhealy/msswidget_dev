@@ -73,11 +73,13 @@
     }
 
     .gauge {
-      position: relative;
-      width: 210px;
-      max-width: 100%;
-      aspect-ratio: 2 / 1;
-    }
+  position: relative;
+  width: 190px;          /* smaller arc */
+  max-width: 100%;
+  aspect-ratio: 2 / 1;
+  margin-top: 14px;      /* pull down from top for headroom */
+  margin-bottom: -6px;   /* bring labels closer underneath */
+}
 
     .gauge svg {
       width: 100%;
@@ -85,14 +87,23 @@
       display: block;
     }
 
-    .gauge-labels {
-      display: flex;
-      justify-content: space-between;
-      width: 90%;
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
+   .gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 10px;       /* slightly smaller */
+  color: var(--muted);
+  margin-top: -4px;      /* closer to arc */
+  padding: 0 10px;       /* keeps A1/C2 under arc ends */
+}
+
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 8px;
+}
 
     .value-row {
       margin-top: 4px;
