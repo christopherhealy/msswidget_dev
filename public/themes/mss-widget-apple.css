@@ -105,18 +105,49 @@ body {
   justify-content: center;
   flex-wrap: wrap;
 }
-.mss-btn {
-  border-radius: var(--apple-radius-pill);
-  border: 1px solid rgba(0,0,0,.08);
-  background: rgba(255,255,255,.85);
-  padding: 12px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 140px;
-  transition: background .15s ease, transform .05s ease, box-shadow .15s ease, border-color .15s ease;
-  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 10px 18px rgba(0,0,0,.02);
-  backdrop-filter: saturate(180%) blur(6px);
-  -webkit-backdrop-filter: saturate(180%) blur(6px);
+/* ---------- Button alignment cleanup (mobile + desktop) ---------- */
+
+/* Standardize all main buttons to match “Record your response” width */
+button.mss-btn,
+button.mss-btn-primary,
+button.mss-btn-secondary {
+  display: block;
+  width: 100%;
+  max-width: 280px;           /* consistent width for all */
+  margin: 8px auto;           /* centers horizontally */
+  text-align: center;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  border-radius: 10px;
+}
+
+/* Reduce excess horizontal padding to balance layout on small screens */
+.mss-widget-container {
+  padding-left: 0.8rem;
+  padding-right: 0.8rem;
+}
+
+/* Optional: tighten spacing between the button rows */
+.mss-button-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Improve “Previous” and “Next” layout */
+.mss-nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Make “Submit” visually consistent */
+#submitBtn {
+  max-width: 280px;
+  margin: 8px auto;
+  display: block;
 }
 .mss-btn:hover { background: rgba(255,255,255,.95); }
 .mss-btn:active { transform: translateY(1px); }
