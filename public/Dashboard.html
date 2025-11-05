@@ -100,7 +100,7 @@
     border:1px dashed #d1d5db;
     background:#f9fafb;
     padding:10px;
-    margin-bottom:12px;
+    margin-top:12px;
     text-align:center;
     font-size:11px;
     color:var(--muted);
@@ -334,12 +334,6 @@
     <div class="layout">
       <!-- LEFT COLUMN -->
       <section class="card">
-        <!-- Reserved visual container -->
-        <div id="vizShell" class="viz-shell">
-          <strong>CEFR visual goes here</strong><br>
-          This space is reserved for a future dashboard graphic (rainbow, pointer, etc.).
-        </div>
-
         <div class="overall-block">
           <div id="cefrHeadline" class="cefr-headline">
             CEFR <span class="level">–</span>
@@ -462,6 +456,12 @@
           </div>
         </div>
 
+        <!-- RESERVED VISUAL SPACE (bottom-right) -->
+        <div id="vizShell" class="viz-shell">
+          <strong>CEFR visual goes here</strong><br>
+          This space is reserved for a future dashboard graphic (rainbow, pointer, etc.).
+        </div>
+
         <div class="footnote">
           Values shown here come from the MSS API response. The full JSON is logged separately for reporting.
         </div>
@@ -580,14 +580,15 @@
     });
   })();
 
-  // Listen for messages from Widget.html
+  // MESSAGE HANDLER — this is the exact pattern that worked before
   window.addEventListener('message', (ev)=>{
     const d = ev.data;
     if (!d) return;
-    // console.log('[Dashboard] message received:', d);
     if (d.type === 'mss:result' || d.type === 'mss-result' || d.type === 'mssScore'){
+      console.log("📦 Dashboard received message:", JSON.stringify(d, null, 2));
       applyMSS(d.payload || d.result || d);
-    }else if (d.result || d.meta || d.elsa_results || d.received){
+    } else if (d.result || d.meta || d.elsa_results || d.received){
+      // generic fallback – treat whole message as payload
       applyMSS(d);
     }
   });
