@@ -469,8 +469,9 @@
     </div>
   </div>
 </div>
-
+<script src="js/mss-core.js"></script>
 <script>
+  // Close button
   function tryClose(){
     try{
       if (window.parent && window.parent !== window){
@@ -482,137 +483,122 @@
     }
   }
 
-  function safeNumber(v){
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
+  const $ = (id) => document.getElementById(id);
+  const setText = (id, value) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = value == null || value === '' ? '–' : value;
+  };
 
-  function ratingLabel(score){
-    if (score == null) return '–';
-    if (score >= 90) return 'Excellent';
-    if (score >= 80) return 'Strong';
-    if (score >= 70) return 'Good';
-    if (score >= 60) return 'Fair';
-    return 'Needs work';
-  }
+  // Map **normalized** MSSCore payload -> your current DOM
+  function renderDashboard(m){
+    // Headline / overall
+    const cefr = m.cefr || '–';
+    const score = m.score;
 
-  function stripTranscript(raw){
-    if (!raw) return '';
-    const div = document.createElement('div');
-    div.innerHTML = String(raw);
-    const text = div.textContent || div.innerText || '';
-    return text.replace(/\s+/g,' ').trim();
-  }
+    const headLevel = document.querySelector('#cefrHeadline .level');
+    if (headLevel) headLevel.textContent = cefr;
 
-  function applyMSS(payload){
-    if (!payload) return;
+    setText('overallScore', score != null ? score.toFixed(2) : '–');
 
-    const res = payload.received || payload.result || payload;
-    const elsa = res.elsa_results || res.elsa || {};
+    setText('badgeCefr',  `CEFR ${cefr}`);
+    setText('badgeToefl', `TOEFL ${m.toefl ?? '–'}`);
+    setText('badgeIelts', `IELTS ${m.ielts ?? '–'}`);
+    setText('badgePte',   `PTE ${m.pte   ?? '–'}`);
 
-    const score = safeNumber(res.score);
-    const cefr  = elsa.cefr_level || res.cefr_level || res.cefr;
-    const toefl = safeNumber(elsa.toefl_score);
-    const ielts = safeNumber(elsa.ielts_score);
-    const pte   = safeNumber(elsa.pte_score);
+    // Test equivalencies (left column)
+    setText('pillToefl', m.toefl);
+    setText('pillIelts', m.ielts);
+    setText('pillPte',   m.pte);
 
-    const cefrText = cefr ? String(cefr).toUpperCase() : '–';
+    // Snapshot tiles (right column)
+    setText('snapCefr',  cefr);
+    setText('snapScore', score != null ? score.toFixed(2) : '–');
+    setText('snapToefl', m.toefl);
+    setText('snapIelts', m.ielts);
 
-    // Headline
-    document.querySelector('#cefrHeadline .level').textContent = cefrText;
-    document.getElementById('badgeCefr').textContent   = 'CEFR ' + cefrText;
-    document.getElementById('badgeToefl').textContent  = 'TOEFL ' + (toefl ?? '–');
-    document.getElementById('badgeIelts').textContent  = 'IELTS ' + (ielts ?? '–');
-    document.getElementById('badgePte').textContent    = 'PTE '   + (pte   ?? '–');
+    // Subscores
+    setText('skillFluencyScore', m.fluency);
+    setText('skillGrammarScore', m.grammar);
+    setText('skillPronScore',    m.pronunciation);
+    setText('skillVocabScore',   m.vocabulary);
 
-    if (score != null){
-      document.getElementById('overallScore').textContent = score.toFixed(2);
-      document.getElementById('snapScore').textContent    = score.toFixed(2);
-    }
-
-    document.getElementById('snapCefr').textContent  = cefrText;
-    document.getElementById('pillToefl').textContent = toefl ?? '–';
-    document.getElementById('pillIelts').textContent = ielts ?? '–';
-    document.getElementById('pillPte').textContent   = pte   ?? '–';
-    document.getElementById('snapToefl').textContent = toefl ?? '–';
-    document.getElementById('snapIelts').textContent = ielts ?? '–';
-
-    // Skills
-    const fl = safeNumber(elsa.fluency);
-    const gr = safeNumber(elsa.grammar);
-    const pr = safeNumber(elsa.pronunciation);
-    const vo = safeNumber(elsa.vocabulary);
-
-    document.getElementById('skillFluencyScore').textContent = fl ?? '–';
-    document.getElementById('skillGrammarScore').textContent = gr ?? '–';
-    document.getElementById('skillPronScore').textContent    = pr ?? '–';
-    document.getElementById('skillVocabScore').textContent   = vo ?? '–';
-
-    document.getElementById('skillFluencyLabel').textContent = ratingLabel(fl);
-    document.getElementById('skillGrammarLabel').textContent = ratingLabel(gr);
-    document.getElementById('skillPronLabel').textContent    = ratingLabel(pr);
-    document.getElementById('skillVocabLabel').textContent   = ratingLabel(vo);
+    setText('skillFluencyLabel', MSSCore.ratingLabel(m.fluency));
+    setText('skillGrammarLabel', MSSCore.ratingLabel(m.grammar));
+    setText('skillPronLabel',    MSSCore.ratingLabel(m.pronunciation));
+    setText('skillVocabLabel',   MSSCore.ratingLabel(m.vocabulary));
 
     // Transcript
-    const tx = stripTranscript(res.transcript || res.rawTranscript || payload.transcript);
-    const txText = document.getElementById('txText');
-    const txToggle = document.getElementById('txToggle');
+    const rawTx  = m.transcript || '';
+    const plain  = MSSCore.stripTranscript(rawTx);
+    const txBody = $('txBody');
+    const txText = $('txText');
+    const txToggle = $('txToggle');
+    const txLabel  = $('txToggleLabel');
 
-    if (tx){
-      txText.textContent = tx;
-      txToggle.disabled = false;
-    }else{
+    if (!txBody || !txText || !txToggle || !txLabel) return;
+
+    if (!plain){
       txText.textContent = '(Transcript not available for this submission.)';
       txToggle.disabled = true;
+      txBody.classList.remove('open');
+      txLabel.textContent = 'Show transcript';
+    }else{
+      txText.textContent = plain;
+      txToggle.disabled = false;
     }
   }
 
-  // Transcript toggle
-  (function(){
-    const toggle = document.getElementById('txToggle');
-    const body = document.getElementById('txBody');
-    const label = document.getElementById('txToggleLabel');
-    toggle.addEventListener('click', ()=>{
+  // Show/Hide transcript
+  function setupTranscriptToggle(){
+    const toggle = $('txToggle');
+    const body   = $('txBody');
+    const label  = $('txToggleLabel');
+    if (!toggle || !body || !label) return;
+
+    toggle.addEventListener('click', () => {
       if (toggle.disabled) return;
       const open = !body.classList.contains('open');
       body.classList.toggle('open', open);
       label.textContent = open ? 'Hide transcript' : 'Show transcript';
     });
-  })();
+  }
 
-  // MESSAGE HANDLER — this is the exact pattern that worked before
-  window.addEventListener('message', (ev)=>{
-    const d = ev.data;
-    if (!d) return;
-    if (d.type === 'mss:result' || d.type === 'mss-result' || d.type === 'mssScore'){
-      console.log("📦 Dashboard received message:", JSON.stringify(d, null, 2));
-      applyMSS(d.payload || d.result || d);
-    } else if (d.result || d.meta || d.elsa_results || d.received){
-      // generic fallback – treat whole message as payload
-      applyMSS(d);
-    }
+  // Real data from Widget
+  MSSCore.listenForMssResult((normalized, raw) => {
+    console.log('📦 Dashboard received MSS result:', normalized, raw);
+    renderDashboard(normalized);
   });
 
-  // Optional dev hook: open Dashboard.html#mock directly to see a sample
-  window.addEventListener('DOMContentLoaded', ()=>{
-    if (location.hash.includes('mock')){
-      applyMSS({
-        received:{
-          score:3.18,
-          transcript:'this is a quick sample transcript from the mock payload.',
-          elsa_results:{
-            fluency:93,
-            grammar:98,
-            pronunciation:82,
-            vocabulary:86,
-            cefr_level:'C2',
-            ielts_score:8.5,
-            toefl_score:29,
-            pte_score:88
-          }
+  // Mock when opened directly (no parent posting message)
+  function maybeRenderMock(){
+    const isEmbedded = window.opener || window !== window.parent;
+    if (isEmbedded) return;
+
+    const mock = MSSCore.normalizeMssPayload({
+      received: {
+        score: 3.18,
+        transcript: 'this is a quick sample transcript from the mock payload.',
+        elsa_results: {
+          cefr_level: 'C2',
+          toefl_score: 29,
+          ielts_score: 8.5,
+          pte_score: 88,
+          fluency: 93,
+          grammar: 98,
+          pronunciation: 82,
+          vocabulary: 86
         }
-      });
-    }
+      }
+    });
+
+    console.log('🧪 Dashboard mock payload', mock);
+    renderDashboard(mock);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    setupTranscriptToggle();
+    maybeRenderMock();
   });
 </script>
 </body>
