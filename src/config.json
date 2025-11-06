@@ -21,6 +21,7 @@
     "enabled": true,
     "url": "https://msswidget-dev.onrender.com/log/submission"
   },
+  "Permitupload": false,
   "audioMinSeconds": 20,
   "audioMaxSeconds": 100
 }

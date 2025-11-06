@@ -247,8 +247,8 @@
         <button id="recBtn"  class="mss-btn primary">Record your response</button>
         <button id="stopBtn" class="mss-btn" disabled>Stop</button>
 
-        <label for="fileInput" class="mss-btn">Choose an audio file</label>
-        <input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
+        <label id="uploadBtn" for="fileInput" class="mss-btn">Choose an audio file</label>
+	<input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
 
         <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear file</button>
       </div>
@@ -420,6 +420,7 @@ function hideDebug() {
   $('logStatus').textContent = '';
   $('logStatus').className = 'mss-logstatus';
 }
+
 function clearTimer(){
   if (tick){ clearInterval(tick); tick=null; }
   $('timer').textContent = '';
@@ -494,6 +495,7 @@ async function loadAll(){
 
   renderQ();
   resetRecordingUI();
+  applyUploadVisibility();
 }
 
 /* render question */
@@ -573,9 +575,11 @@ function finalizeRecording(){
 
 /* upload */
 $('fileInput')?.addEventListener('change', async (e)=>{
+  if (CONFIG?.Permitupload === false) return; // uploads disabled
   const f = e.target.files && e.target.files[0];
   if (!f) return;
   uploadedFile = f;
+
   $('fileBadge').textContent = `Selected: ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
   $('clearFileBtn').style.display='inline-block';
   $('recBtn').disabled = true;
@@ -598,6 +602,40 @@ $('fileInput')?.addEventListener('change', async (e)=>{
     $('lengthHint').textContent = `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
   };
 });
+/* added this Nov 6 */
+
+function applyUploadVisibility() {
+  // Default: allow upload unless explicitly turned off
+  const allowUpload = CONFIG?.Permitupload !== false;
+
+  const uploadLabel = $('uploadBtn');
+  const fileInput   = $('fileInput');
+  const clearBtn    = $('clearFileBtn');
+
+  if (uploadLabel) {
+    uploadLabel.style.display = allowUpload ? '' : 'none';
+  }
+
+  if (fileInput) {
+    fileInput.disabled = !allowUpload;
+
+    // If uploads are disallowed, nuke any existing file selection
+    if (!allowUpload) {
+      fileInput.value = '';
+      uploadedFile = null;
+      $('fileBadge').textContent = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      resetRecordingUI('Upload disabled — ready to record');
+    }
+  }
+
+  // Clear button stays driven by the upload flow when uploads are allowed.
+  // If uploads are off, ensure it's hidden.
+  if (clearBtn && !allowUpload) {
+    clearBtn.style.display = 'none';
+  }
+}
+
 $('clearFileBtn')?.addEventListener('click', ()=>{
   uploadedFile = null;
   $('fileInput').value = '';
