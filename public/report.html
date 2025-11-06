@@ -66,7 +66,7 @@
 
 <script>
   /* ------------------------------------------------------------------
-     CONFIG / STATE
+     CONFIG / ENV
   ------------------------------------------------------------------ */
   const SERVICE_BASE = window.location.hostname.includes("localhost")
     ? "http://localhost:3000"
@@ -117,10 +117,7 @@
   function csvEscape(v) {
     if (v == null) return "";
     const s = String(v);
-    if (/[",\n]/.test(s)) {
-      return '"' + s.replace(/"/g, '""') + '"';
-    }
-    return s;
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
   /* ------------------------------------------------------------------
@@ -205,7 +202,9 @@
     for (const r of state.filtered) {
       const btn = document.querySelector(`button[data-save="${cssEsc(r.id)}"]`);
       const ta = document.querySelector(`textarea[data-note="${cssEsc(r.id)}"]`);
-      const tchr = document.querySelector(`input[data-teacher="${cssEsc(r.id)}"]`);
+      const tchr = document.querySelector(
+        `input[data-teacher="${cssEsc(r.id)}"]`
+      );
       if (btn && ta && tchr) {
         btn.addEventListener("click", () =>
           saveNote(r.id, tchr.value.trim(), ta.value.trim())
@@ -240,7 +239,7 @@
       const allRows = data.rows || [];
       state.headers = data.headers || [];
 
-      // Apply "Last N" limit on the client
+      // apply "Last N" on client side
       const start = Math.max(0, allRows.length - limit);
       state.rows = allRows.slice(start);
 
@@ -275,21 +274,15 @@
       });
 
       let ok = res.ok;
-      let data = {};
       try {
-        data = await res.json();
+        const data = await res.json();
         if (data && data.ok === false) ok = false;
       } catch {
         // ignore JSON parse errors
       }
 
-      if (!ok) {
-        alert("Save failed.");
-        return;
-      }
-
       await loadRows();
-      alert("Saved.");
+      alert(ok ? "Saved." : "Save failed.");
     } catch (err) {
       console.error("saveNote error", err);
       alert("Save failed.");
@@ -297,7 +290,7 @@
   }
 
   /* ------------------------------------------------------------------
-     DOWNLOAD CSV (client-side)
+     DOWNLOAD CSV (client-side using headers+rows)
   ------------------------------------------------------------------ */
   function downloadCsv() {
     if (!state.headers.length || !state.rows.length) {
@@ -326,11 +319,11 @@
      WIRE UI + BOOT
   ------------------------------------------------------------------ */
   $("refresh").addEventListener("click", loadRows);
-  $("downloadCsv").addEventListener("click", downloadCsv);
   $("q").addEventListener("input", render);
+  $("downloadCsv").addEventListener("click", downloadCsv);
   $("limit").addEventListener("change", loadRows);
 
-  // Initial load
+  // initial load
   loadRows();
 </script>
 </body>
