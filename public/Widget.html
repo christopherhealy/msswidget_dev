@@ -659,7 +659,9 @@ async function submitRecording(){
 
   setStatus('Submitting to MSS…');
 
-  const endpoint = base.replace(/\/+$/,'') + '/api/codebot/vox';
+  // Use the official VoX API endpoint instead of the internal codebot route
+  const endpoint = base.replace(/\/+$/,'') + '/api/vox';
+
   const fd = new FormData();
   fd.append('file', wavBlob, uploadedFile ? uploadedFile.name : 'answer.wav');
 
