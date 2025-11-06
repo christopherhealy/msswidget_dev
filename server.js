@@ -210,6 +210,43 @@ function csvEscape(v) {
   return s;
 }
 
+// simple CSV parser that understands quotes, commas, and escaped quotes
+function parseCsvLine(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          // escaped quote
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        out.push(cur);
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+  }
+
+  out.push(cur);
+  return out;
+}
+
 app.post("/log/submission", async (req, res) => {
   try {
     const body = req.body || {};
@@ -246,6 +283,48 @@ app.post("/log/submission", async (req, res) => {
   } catch (e) {
     console.error("POST /log/submission error:", e);
     res.status(500).json({ ok: false, error: "log failed" });
+  }
+});
+
+// READ log as JSON for admin report UI
+app.get("/log/submissions", async (req, res) => {
+  try {
+    let csv;
+    try {
+      csv = await fs.readFile(LOG_CSV, "utf8");
+    } catch {
+      // no log file yet
+      return res.json({ headers: [], rows: [] });
+    }
+
+    const trimmed = csv.trim();
+    if (!trimmed) {
+      return res.json({ headers: [], rows: [] });
+    }
+
+    const lines = trimmed.split(/\r?\n/);
+    if (!lines.length) {
+      return res.json({ headers: [], rows: [] });
+    }
+
+    const headers = parseCsvLine(lines[0]);
+
+    const rows = lines
+      .slice(1)
+      .filter((l) => l.trim() !== "")
+      .map((line, idx) => {
+        const cols = parseCsvLine(line);
+        const row = { id: idx }; // row index in the CSV
+        headers.forEach((h, i) => {
+          row[h] = cols[i] ?? "";
+        });
+        return row;
+      });
+
+    res.json({ headers, rows });
+  } catch (e) {
+    console.error("GET /log/submissions error:", e);
+    res.status(500).json({ ok: false, error: "failed to read log" });
   }
 });
 
