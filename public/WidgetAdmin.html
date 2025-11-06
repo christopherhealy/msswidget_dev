@@ -346,30 +346,36 @@ function bindBranding(){
 }
 
 /* ========= API, Logging & Audio ========= */
-function bindApiLoggingAudio(){
-  $('cfgApiBase').value = CONFIG.api?.baseUrl || '';
-  $('cfgApiBase').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.baseUrl = e.target.value; });
+function bindApiLoggingAudio() {
+  // In WidgetAdmin we only expose logger URL + audio timings.
+  // API base/key/secret + enableLogging live in ConfigAdmin.html now.
 
-  $('cfgApiKey').value = CONFIG.api?.key || '';
-  $('cfgApiKey').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.key = e.target.value; });
+  const logUrlEl = $('cfgLogUrl');
+  if (logUrlEl) {
+    logUrlEl.value = CONFIG.logger?.url || '';
+    logUrlEl.addEventListener('input', (e) => {
+      CONFIG.logger ||= {};
+      CONFIG.logger.url = e.target.value;
+    });
+  }
 
-  $('cfgApiSecret').value = CONFIG.api?.secret || '';
-  $('cfgApiSecret').addEventListener('input', e=>{ CONFIG.api ||= {}; CONFIG.api.secret = e.target.value; });
+  const minEl = $('cfgMinS');
+  if (minEl) {
+    minEl.value = Number(CONFIG.audioMinSeconds ?? 30);
+    minEl.addEventListener('input', (e) => {
+      CONFIG.audioMinSeconds = Math.max(1, Number(e.target.value || 30));
+      renderPreview();
+    });
+  }
 
-  $('cfgLogEnabled').checked = !!CONFIG.logger?.enabled;
-  $('cfgLogEnabled').addEventListener('change', e=>{ CONFIG.logger ||= {}; CONFIG.logger.enabled = e.target.checked; });
-
-  $('cfgLogUrl').value = CONFIG.logger?.url || '';
-  $('cfgLogUrl').addEventListener('input', e=>{ CONFIG.logger ||= {}; CONFIG.logger.url = e.target.value; });
-
-  $('cfgMinS').value = Number(CONFIG.audioMinSeconds ?? 30);
-  $('cfgMinS').addEventListener('input', e=>{
-    CONFIG.audioMinSeconds = Math.max(1, Number(e.target.value||30)); renderPreview();
-  });
-  $('cfgMaxS').value = Number(CONFIG.audioMaxSeconds ?? 61);
-  $('cfgMaxS').addEventListener('input', e=>{
-    CONFIG.audioMaxSeconds = Math.max(1, Number(e.target.value||61)); renderPreview();
-  });
+  const maxEl = $('cfgMaxS');
+  if (maxEl) {
+    maxEl.value = Number(CONFIG.audioMaxSeconds ?? 61);
+    maxEl.addEventListener('input', (e) => {
+      CONFIG.audioMaxSeconds = Math.max(1, Number(e.target.value || 61));
+      renderPreview();
+    });
+  }
 }
 
 /* ========= preview ========= */
