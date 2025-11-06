@@ -147,7 +147,15 @@
     .mss-row { margin-top:10px; text-align:center; }
     .mss-resultswrap { margin-top:12px; }
     .mss-debug { display:none; margin-top:10px; }
-    .mss-debug pre { max-height:260px; overflow:auto; font-size:0.75rem; background:#0b1120; color:#e5e7eb; padding:10px; border-radius:8px; }
+    .mss-debug pre {
+      max-height:260px;
+      overflow:auto;
+      font-size:0.75rem;
+      background:#0b1120;
+      color:#e5e7eb;
+      padding:10px;
+      border-radius:8px;
+    }
     .mss-logstatus { font-size:12px; text-align:center; margin-top:6px; }
     .mss-logstatus.ok { color:#16a34a; }
     .mss-logstatus.err { color:#dc2626; }
@@ -248,7 +256,7 @@
         <button id="stopBtn" class="mss-btn" disabled>Stop</button>
 
         <label id="uploadBtn" for="fileInput" class="mss-btn">Choose an audio file</label>
-	<input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
+        <input id="fileInput" class="mss-file" type="file" accept="audio/*"/>
 
         <button id="clearFileBtn" class="mss-btn" style="display:none;">Clear file</button>
       </div>
@@ -306,28 +314,30 @@
 const $ = (id) => document.getElementById(id);
 const SERVICE_BASE = (window.SERVICE_BASE || 'https://msswidget-dev.onrender.com').replace(/\/+$/,'');
 
-let FORM=null, CONFIG=null, IMAGE=null;
-let idx=0, chunks=[], mediaRecorder=null, recording=false, blob=null, url=null;
-let uploadedFile=null;
-let t0=0, tick=null;
-let submitTimerId=null, submitStart=0;
-let dashboardWindow=null;
+let FORM = null, CONFIG = null, IMAGE = null;
+let idx = 0, chunks = [], mediaRecorder = null, recording = false, blob = null, url = null;
+let uploadedFile = null;
+let t0 = 0, tick = null;
+let submitTimerId = null, submitStart = 0;
+let dashboardWindow = null;
+let recordCount = 0; // how many times user recorded on current question
 
 /* ===== helpers ===== */
 function mmss(ms){
-  const s=Math.floor(ms/1000);
-  const m=Math.floor(s/60);
-  const r=s%60;
+  const s = Math.floor(ms/1000);
+  const m = Math.floor(s/60);
+  const r = s % 60;
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
 }
 function setStatus(msg, ok=true){
-  const el=$('status');
-  el.textContent=msg;
-  el.className='mss-status ' + (ok?'ok':'warn');
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'mss-status ' + (ok ? 'ok' : 'warn');
 }
 function getLogoFrom(img){
   if(!img) return '';
-  for(const k of ['logoDataUrl','dataUrl','logo','src','url','path']) if(img[k]) return String(img[k]);
+  for(const k of ['logoDataUrl','dataUrl','logo','src','url','path'])
+    if(img[k]) return String(img[k]);
   return '';
 }
 function showDebug(obj){ $('results').textContent = JSON.stringify(obj, null, 2); }
@@ -420,7 +430,6 @@ function hideDebug() {
   $('logStatus').textContent = '';
   $('logStatus').className = 'mss-logstatus';
 }
-
 function clearTimer(){
   if (tick){ clearInterval(tick); tick=null; }
   $('timer').textContent = '';
@@ -499,8 +508,19 @@ async function loadAll(){
 }
 
 /* render question */
+function getCurrentQuestionText() {
+  const s = Array.isArray(FORM?.survey) ? FORM.survey : [];
+  if (!s.length) return '';
+  const item = s[idx];
+  if (typeof item === 'string') return item;
+  if (item && typeof item === 'object') {
+    return item.question || item.prompt || '';
+  }
+  return '';
+}
+
 function renderQ(){
-  const s = Array.isArray(FORM.survey)?FORM.survey:[];
+  const s = Array.isArray(FORM?.survey) ? FORM.survey : [];
   if(!s.length){
     $('counter').textContent='';
     $('question').textContent='(No questions found)';
@@ -508,7 +528,8 @@ function renderQ(){
   }
   idx = Math.max(0,Math.min(idx,s.length-1));
   $('counter').textContent=`Question ${idx+1} of ${s.length}`;
-  $('question').textContent=s[idx];
+  $('question').textContent = getCurrentQuestionText();
+  recordCount = 0; // reset per question
 }
 
 /* recording */
@@ -516,32 +537,34 @@ async function startRecording(){
   if (uploadedFile){ return; }
   hideDebug();
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     chunks=[];
     mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
-    mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
-    mediaRecorder.onstop=finalizeRecording;
+    mediaRecorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+    mediaRecorder.onstop = finalizeRecording;
 
-    recording=true;
-    t0=performance.now();
-    tick=setInterval(()=>{ $('timer').textContent=mmss(performance.now()-t0); },200);
+    recording = true;
+    recordCount += 1;
 
-    $('recBtn').disabled=true;
-    $('stopBtn').disabled=false;
-    $('submitBtn').disabled=true;
+    t0 = performance.now();
+    tick = setInterval(()=>{ $('timer').textContent=mmss(performance.now()-t0); },200);
+
+    $('recBtn').disabled = true;
+    $('stopBtn').disabled = false;
+    $('submitBtn').disabled = true;
     $('recDot').classList.add('on');
-    $('recState').textContent='Recording…';
-    $('playerWrap').style.display='none';
+    $('recState').textContent = 'Recording…';
+    $('playerWrap').style.display = 'none';
 
     mediaRecorder.start();
     setStatus('Recording started');
   }catch(err){
     console.warn(err);
-    setStatus('Microphone permission denied',false);
+    setStatus('Microphone permission denied', false);
   }
 }
 function stopRecording(){
-  if(!mediaRecorder||!recording) return;
+  if(!mediaRecorder || !recording) return;
   recording=false;
   try{ mediaRecorder.stop(); }catch{}
   stopTracks();
@@ -602,8 +625,8 @@ $('fileInput')?.addEventListener('change', async (e)=>{
     $('lengthHint').textContent = `Length: ${mmss(d*1000)} (must be ${mins}:${secs}–${maxm}:${maxs})`;
   };
 });
-/* added this Nov 6 */
 
+/* upload visibility based on CONFIG.Permitupload */
 function applyUploadVisibility() {
   // Default: allow upload unless explicitly turned off
   const allowUpload = CONFIG?.Permitupload !== false;
@@ -629,8 +652,6 @@ function applyUploadVisibility() {
     }
   }
 
-  // Clear button stays driven by the upload flow when uploads are allowed.
-  // If uploads are off, ensure it's hidden.
   if (clearBtn && !allowUpload) {
     clearBtn.style.display = 'none';
   }
@@ -652,44 +673,60 @@ function getActiveAudioBlob(){
 }
 
 async function submitRecording(){
-  const base = (CONFIG?.api?.baseUrl || '').trim();
-  const key  = (CONFIG?.api?.key || '').trim();
+  const base   = (CONFIG?.api?.baseUrl || '').trim();
+  const key    = (CONFIG?.api?.key || '').trim();
   const secret = (CONFIG?.api?.secret || '').trim();
 
   if (!key || !secret || !base) {
     setStatus('Missing API baseUrl, key or X-API-SECRET in config', false);
-    appendAttempt({ error:'missing_credentials', hasBase:!!base, hasKey:!!key, hasSecret:!!secret });
+    appendAttempt({
+      error:'missing_credentials',
+      hasBase:!!base,
+      hasKey:!!key,
+      hasSecret:!!secret
+    });
     return;
   }
 
   const input = getActiveAudioBlob();
-  if (!input){ setStatus('No recording or file to submit', false); return; }
+  if (!input) {
+    setStatus('No recording or file to submit', false);
+    return;
+  }
 
-  // duration validation
-  const p = $('player'), dur = p?.duration || 0;
+  const p   = $('player');
+  const dur = p?.duration || 0;
   const { minS, maxS } = getDurationBounds();
-  if (!Number.isNaN(dur) && dur > 0 && (dur < minS || dur > maxS)){
+  if (!Number.isNaN(dur) && dur > 0 && (dur < minS || dur > maxS)) {
     setStatus(`Audio must be between ${minS} and ${maxS} seconds. Please try again.`, false);
-    appendAttempt({error:'duration_out_of_range', seconds: Math.round(dur), minS, maxS});
+    appendAttempt({
+      error:'duration_out_of_range',
+      seconds: Math.round(dur),
+      minS,
+      maxS
+    });
     return;
   }
 
   setStatus('Preparing audio…');
   startProgress('Submitting');
   let wavBlob;
-  try{
-    if (uploadedFile && /^audio\/wav/i.test(uploadedFile.type)) wavBlob = uploadedFile;
-    else wavBlob = await transcodeToWav(input);
-  }catch(e){
+  try {
+    if (uploadedFile && /^audio\/wav/i.test(uploadedFile.type)) {
+      wavBlob = uploadedFile;
+    } else {
+      wavBlob = await transcodeToWav(input);
+    }
+  } catch (e) {
     stopProgress('Failed');
     setStatus('Could not prepare audio', false);
-    appendAttempt({error:'wav_transcode_failed', message:String(e)});
+    appendAttempt({ error:'wav_transcode_failed', message:String(e) });
     return;
   }
 
   const pre = await checkAccess(base, key);
   appendAttempt({ step:'check-access', ...pre });
-  if (!pre.ok){
+  if (!pre.ok) {
     stopProgress('Failed');
     setStatus(`Access check failed (${pre.status})`, false);
     return;
@@ -697,7 +734,6 @@ async function submitRecording(){
 
   setStatus('Submitting to MSS…');
 
-  // Use the official VoX API endpoint instead of the internal codebot route
   const endpoint = base.replace(/\/+$/,'') + '/api/vox';
 
   const fd = new FormData();
@@ -705,36 +741,26 @@ async function submitRecording(){
 
   let submitSec = 0;
   const tStart = performance.now();
-  try{
+
+  try {
     const headers = {
       'API-KEY': key,
       'X-API-SECRET': secret,
       'Accept':'application/json'
     };
-   const res = await fetch(endpoint, { method: 'POST', headers, body: fd });
-const submitSec = Math.max(0, (performance.now() - tStart) / 1000);
-const mssBody = await res.json().catch(() => ({}));
 
-// log to CSV (does not throw if it fails)
-
-await logResultToCsv(mssBody, {
-  userId: currentUserId || "",                     // if you track a user id
-  fileName: uploadedFileName || "(recorded)",      // or whatever you use
-  lengthSec: meta?.lengthSec || meta?.duration || 0, // or your real length variable
-  submitTime: submitSec,
-  question: currentQuestionText || meta?.question || "",
-  recordCount: recordingCount || 1
-});
-
+    const res = await fetch(endpoint, { method:'POST', headers, body: fd });
+    submitSec = Math.max(0, (performance.now() - tStart) / 1000);
+    const body = await res.json().catch(() => ({}));
 
     appendAttempt({
       step:'vox',
-      status:res.status,
-      url:endpoint,
-      sent:{
+      status: res.status,
+      url: endpoint,
+      sent: {
         fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
-        fileType:wavBlob.type,
-        fileSize:wavBlob.size
+        fileType: wavBlob.type,
+        fileSize: wavBlob.size
       },
       headers: {
         'X-RateLimit-Limit': res.headers.get('X-RateLimit-Limit'),
@@ -743,38 +769,40 @@ await logResultToCsv(mssBody, {
       body
     });
 
-    if (res.ok){
+    if (res.ok) {
       stopProgress('Done');
       setStatus('Submitted ✅');
 
-      $('debugBtnRow').style.display='flex';
+      $('debugBtnRow').style.display = 'flex';
       showDebug({ received: body });
 
-      // DASHBOARD: open modal and send results to Dashboard.html
+      // DASHBOARD modal
       openDashboard();
       try {
         dashboardWindow?.postMessage({ type:'mss-results', payload: body }, '*');
-      } catch(e){
+      } catch (e) {
         console.warn('dash postMessage failed', e);
       }
 
       // Logging to Render CSV
-      logResultToCsv(body, {
+      await logResultToCsv(body, {
+        userId: "", // can wire later if you track user IDs
         fileName: uploadedFile ? uploadedFile.name : 'answer.wav',
         lengthSec: Math.round(dur || 0),
         submitTime: Number(submitSec.toFixed(2)),
-        question: Array.isArray(FORM?.survey) ? (FORM.survey[idx] || '') : ''
+        question: getCurrentQuestionText(),
+        recordCount
       });
 
       $('submitBtn').disabled = false;
-    }else{
+    } else {
       stopProgress('Failed');
       setStatus(`Submit failed (${res.status})`, false);
     }
-  }catch(err){
+  } catch (err) {
     stopProgress('Failed');
     setStatus('Network error', false);
-    appendAttempt({error:String(err)});
+    appendAttempt({ error:String(err) });
   }
 }
 
@@ -787,7 +815,6 @@ async function logResultToCsv(mssBody, meta) {
   const url = loggerCfg.url;
   const statusEl = $("logStatus");
 
-  // ---- derive scores from MSS body ----
   const els = mssBody?.elsa_results || {};
 
   const toefl =
@@ -806,7 +833,6 @@ async function logResultToCsv(mssBody, meta) {
     .toString()
     .toUpperCase();
 
-  // ---- transcript + WPM ----
   const transcript = (mssBody?.transcript || "").toString().trim();
   let wpm = "";
   try {
@@ -819,10 +845,8 @@ async function logResultToCsv(mssBody, meta) {
     // leave wpm as ""
   }
 
-  // ---- build payload that matches LOG_HEADERS on the server ----
   const payload = {
     timestamp: new Date().toISOString(),
-    // ip is filled in by the server, no need to send it here
     userId: meta?.userId ?? "",
     fileName: meta?.fileName ?? "",
     lengthSec: meta?.lengthSec ?? "",
@@ -835,7 +859,6 @@ async function logResultToCsv(mssBody, meta) {
     transcript,
     wpm,
     recordCount: meta?.recordCount ?? "",
-    // teacher & note are edited later in the Report UI
     teacher: "",
     note: "",
   };
@@ -875,6 +898,7 @@ async function logResultToCsv(mssBody, meta) {
     console.warn("Logger unreachable:", e);
   }
 }
+
 /* dashboard modal */
 function openDashboard(){
   const m = $('dashModal');
@@ -896,8 +920,18 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   $('recBtn').addEventListener('click',startRecording);
   $('stopBtn').addEventListener('click',stopRecording);
   $('submitBtn').addEventListener('click',submitRecording);
-  $('prevBtn').addEventListener('click',()=>{idx--;renderQ(); resetRecordingUI('Not recording'); hideDebug();});
-  $('nextBtn').addEventListener('click',()=>{idx++;renderQ(); resetRecordingUI('Not recording'); hideDebug();});
+  $('prevBtn').addEventListener('click',()=>{
+    idx--;
+    renderQ();
+    resetRecordingUI('Not recording');
+    hideDebug();
+  });
+  $('nextBtn').addEventListener('click',()=>{
+    idx++;
+    renderQ();
+    resetRecordingUI('Not recording');
+    hideDebug();
+  });
   $('toggleDebug').addEventListener('click', ()=>{
     const w = $('debugWrap');
     w.style.display = (w.style.display==='block'?'none':'block');
