@@ -711,9 +711,22 @@ async function submitRecording(){
       'X-API-SECRET': secret,
       'Accept':'application/json'
     };
-    const res = await fetch(endpoint, { method:'POST', headers, body: fd });
-    submitSec = Math.max(0, (performance.now()-tStart)/1000);
-    const body = await res.json().catch(()=>({}));
+   const res = await fetch(endpoint, { method: 'POST', headers, body: fd });
+const submitSec = Math.max(0, (performance.now() - tStart) / 1000);
+const mssBody = await res.json().catch(() => ({}));
+
+// log to CSV (does not throw if it fails)
+
+await logResultToCsv(mssBody, {
+  userId: currentUserId || "",                     // if you track a user id
+  fileName: uploadedFileName || "(recorded)",      // or whatever you use
+  lengthSec: meta?.lengthSec || meta?.duration || 0, // or your real length variable
+  submitTime: submitSec,
+  question: currentQuestionText || meta?.question || "",
+  recordCount: recordingCount || 1
+});
+
+
     appendAttempt({
       step:'vox',
       status:res.status,
@@ -766,68 +779,102 @@ async function submitRecording(){
 }
 
 /* logging to Render CSV */
-async function logResultToCsv(mssBody, meta){
-  const enabled = Boolean(CONFIG?.logger?.enabled) && !!CONFIG?.logger?.url;
+async function logResultToCsv(mssBody, meta) {
+  const loggerCfg = CONFIG?.logger || {};
+  const enabled = Boolean(loggerCfg.enabled) && !!loggerCfg.url;
   if (!enabled) return;
 
-  const ipPlaceholder = '';
-  const ts = new Date().toISOString();
+  const url = loggerCfg.url;
+  const statusEl = $("logStatus");
 
-  const toefl = mssBody?.elsa_results?.toefl_score ?? mssBody?.toefl_score ?? '';
-  const ielts = mssBody?.elsa_results?.ielts_score ?? mssBody?.ielts_score ?? '';
-  const pte   = mssBody?.elsa_results?.pte_score   ?? mssBody?.pte_score   ?? '';
-  const cefr  = (mssBody?.elsa_results?.cefr_level || mssBody?.cefr_level || '').toString().toUpperCase();
+  // ---- derive scores from MSS body ----
+  const els = mssBody?.elsa_results || {};
 
-  const transcript = (mssBody?.transcript || '').toString().trim();
-  let wpm = '';
-  try{
+  const toefl =
+    els.toefl_score ??
+    mssBody?.toefl_score ??
+    "";
+  const ielts =
+    els.ielts_score ??
+    mssBody?.ielts_score ??
+    "";
+  const pte =
+    els.pte_score ??
+    mssBody?.pte_score ??
+    "";
+  const cefr = (els.cefr_level || mssBody?.cefr_level || "")
+    .toString()
+    .toUpperCase();
+
+  // ---- transcript + WPM ----
+  const transcript = (mssBody?.transcript || "").toString().trim();
+  let wpm = "";
+  try {
     if (transcript) {
       const words = transcript.split(/\s+/).filter(Boolean).length;
-      const minutes = Math.max(0.01, (meta.lengthSec || 0) / 60);
+      const minutes = Math.max(0.01, (meta?.lengthSec || 0) / 60);
       wpm = Math.round(words / minutes);
     }
-  }catch{}
+  } catch {
+    // leave wpm as ""
+  }
 
+  // ---- build payload that matches LOG_HEADERS on the server ----
   const payload = {
-    timestamp: ts,
-    ip: ipPlaceholder,
-    userId: '',
-    fileName: meta.fileName || '',
-    lengthSec: meta.lengthSec || '',
-    submitTime: meta.submitTime || '',
-    toefl, ielts, pte, cefr,
-    question: meta.question || '',
+    timestamp: new Date().toISOString(),
+    // ip is filled in by the server, no need to send it here
+    userId: meta?.userId ?? "",
+    fileName: meta?.fileName ?? "",
+    lengthSec: meta?.lengthSec ?? "",
+    submitTime: meta?.submitTime ?? "",
+    toefl,
+    ielts,
+    pte,
+    cefr,
+    question: meta?.question ?? "",
     transcript,
-    wpm
+    wpm,
+    recordCount: meta?.recordCount ?? "",
+    // teacher & note are edited later in the Report UI
+    teacher: "",
+    note: "",
   };
 
-  const url = CONFIG.logger.url;
-  const statusEl = $('logStatus');
-  try{
-    statusEl.textContent = 'Logging…';
-    statusEl.className = 'mss-logstatus';
-    const res = await fetch(url, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const j = await res.json().catch(()=>({}));
-    if (res.ok && j?.ok){
-      statusEl.textContent = 'Logged ✓';
-      statusEl.className = 'mss-logstatus ok';
-      console.log('📝 Logged:', j.file);
-    }else{
-      statusEl.textContent = 'Log failed';
-      statusEl.className = 'mss-logstatus err';
-      console.warn('Logger responded error:', j);
+  try {
+    if (statusEl) {
+      statusEl.textContent = "Logging…";
+      statusEl.className = "mss-logstatus";
     }
-  }catch(e){
-    statusEl.textContent = 'Log error';
-    statusEl.className = 'mss-logstatus err';
-    console.warn('Logger unreachable:', e);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const j = await res.json().catch(() => ({}));
+
+    if (res.ok && (j.ok === true || j.ok === undefined)) {
+      if (statusEl) {
+        statusEl.textContent = "Logged ✓";
+        statusEl.className = "mss-logstatus ok";
+      }
+      console.log("📝 Logged payload:", payload);
+    } else {
+      if (statusEl) {
+        statusEl.textContent = "Log failed";
+        statusEl.className = "mss-logstatus err";
+      }
+      console.warn("Logger responded error:", j);
+    }
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = "Log error";
+      statusEl.className = "mss-logstatus err";
+    }
+    console.warn("Logger unreachable:", e);
   }
 }
-
 /* dashboard modal */
 function openDashboard(){
   const m = $('dashModal');

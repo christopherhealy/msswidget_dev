@@ -171,10 +171,10 @@
   <table>
     <thead>
       <tr>
-        <th style="width: 12%">Timestamp / ID</th>
-        <th style="width: 18%">File</th>
+        <th style="width: 14%">Timestamp / ID</th>
+        <th style="width: 22%">File / User</th>
         <th style="width: 15%">Scores</th>
-        <th style="width: 25%">Question</th>
+        <th style="width: 24%">Question</th>
         <th>Teacher / Notes</th>
       </tr>
     </thead>
@@ -186,6 +186,33 @@
       </tr>
     </tbody>
   </table>
+
+  <!-- Modal dialog -->
+  <div id="dlg-overlay" style="
+    display:none; position:fixed; inset:0;
+    background:rgba(15,23,42,0.45);
+    align-items:center; justify-content:center;
+    z-index:9999;">
+    <div style="
+      background:white;
+      border-radius:12px;
+      box-shadow:0 18px 45px rgba(15,23,42,0.35);
+      width:min(90%, 380px);
+      padding:20px 22px 18px;
+      text-align:left;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div id="dlg-title" style="font-size:15px;font-weight:600;color:#111827;">
+          Notice
+        </div>
+      </div>
+      <div id="dlg-message" style="font-size:13px;color:#4b5563;margin-bottom:18px;"></div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button id="dlg-ok" class="primary" style="padding:7px 18px;font-size:13px;">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     /* ------------------------------------------------------------------
@@ -205,6 +232,29 @@
       rows: [],
       filtered: [],
     };
+
+    /* ------------------------------------------------------------------
+       DIALOG
+    ------------------------------------------------------------------ */
+    function showDialog(title, message, onClose) {
+      const overlay = $("dlg-overlay");
+      const titleEl = $("dlg-title");
+      const msgEl = $("dlg-message");
+      const okBtn = $("dlg-ok");
+
+      titleEl.textContent = title || "Notice";
+      msgEl.textContent = message || "";
+
+      overlay.style.display = "flex";
+
+      const close = () => {
+        overlay.style.display = "none";
+        okBtn.removeEventListener("click", close);
+        if (onClose) onClose();
+      };
+
+      okBtn.addEventListener("click", close);
+    }
 
     /* ------------------------------------------------------------------
        HELPERS
@@ -259,6 +309,14 @@
       const teacher = r.teacher || "";
       const note = r.note || "";
 
+      const ipLine = r.ip ? `IP: ${r.ip}` : "";
+      const rcLine =
+        r.recordCount && Number(r.recordCount) > 0
+          ? `recs: ${r.recordCount}`
+          : "";
+
+      const metaBits = [ipLine, rcLine].filter(Boolean).join(" · ");
+
       return `
         <tr>
           <td>
@@ -267,7 +325,7 @@
           </td>
           <td>
             <div><b>${r.fileName || "(recorded)"}</b>${len}</div>
-            <div class="muted">${r.extra || ""}</div>
+            <div class="muted">${metaBits}</div>
           </td>
           <td>${scores || '<span class="muted">—</span>'}</td>
           <td>${escapeHtml(r.question || "")}</td>
@@ -292,7 +350,7 @@
     }
 
     function render() {
-      const qv = $("q")?.value?.trim().toLowerCase() || "";
+      const qv = $("q").value.trim().toLowerCase();
       state.filtered = state.rows.filter((r) => {
         if (!qv) return true;
         const hay = [
@@ -304,6 +362,8 @@
           r.question,
           r.teacher,
           r.note,
+          r.ip,
+          r.recordCount,
         ]
           .join(" ")
           .toLowerCase();
@@ -322,7 +382,7 @@
       const ordered = state.filtered.slice().reverse();
       tbody.innerHTML = ordered.map((r) => rowHtml(r)).join("");
 
-      // wire Save Note buttons for ordered rows
+      // wire Save Note buttons
       for (const r of ordered) {
         const btn = document.querySelector(`button[data-save="${cssEsc(r.id)}"]`);
         const ta = document.querySelector(`textarea[data-note="${cssEsc(r.id)}"]`);
@@ -405,10 +465,14 @@
         }
 
         await loadRows();
-        alert(ok ? "Saved." : "Save failed.");
+        if (ok) {
+          showDialog("Report", "✅ Notes saved for this submission.");
+        } else {
+          showDialog("Report", "⚠️ Save failed. Please try again.");
+        }
       } catch (err) {
         console.error("saveNote error", err);
-        alert("Save failed.");
+        showDialog("Report", "⚠️ Save failed. Please try again.");
       }
     }
 
@@ -417,7 +481,7 @@
     ------------------------------------------------------------------ */
     function downloadCsv() {
       if (!state.headers.length || !state.rows.length) {
-        alert("No data to download.");
+        showDialog("Download CSV", "There’s no data to download yet.");
         return;
       }
 
@@ -441,13 +505,10 @@
     /* ------------------------------------------------------------------
        WIRE UI + BOOT
     ------------------------------------------------------------------ */
-    document.getElementById("refresh").addEventListener("click", loadRows);
-    document.getElementById("downloadCsv").addEventListener("click", downloadCsv);
-    document.getElementById("limit").addEventListener("change", loadRows);
-
-    // search box might not exist in some very old versions; guard just in case
-    const qEl = document.getElementById("q");
-    if (qEl) qEl.addEventListener("input", render);
+    $("refresh").addEventListener("click", loadRows);
+    $("downloadCsv").addEventListener("click", downloadCsv);
+    $("limit").addEventListener("change", loadRows);
+    $("q").addEventListener("input", render);
 
     // initial load
     loadRows();

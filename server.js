@@ -28,6 +28,7 @@ const LOG_HEADERS = [
   "question",
   "transcript",
   "wpm",
+  "recordCount",
   "teacher",
   "note",
 ];
@@ -203,13 +204,20 @@ function parseCsvLine(line) {
         if (line[i + 1] === '"') {
           cur += '"';
           i++;
-        } else inQuotes = false;
-      } else cur += ch;
-    } else if (ch === '"') inQuotes = true;
-    else if (ch === ",") {
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
       out.push(cur);
       cur = "";
-    } else cur += ch;
+    } else {
+      cur += ch;
+    }
   }
   out.push(cur);
   return out;
@@ -220,6 +228,13 @@ app.post("/log/submission", async (req, res) => {
   try {
     const body = req.body || {};
     const headers = LOG_HEADERS;
+
+    // best-effort IP capture
+    const rawIp =
+      (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "") + "";
+    const ip = rawIp.split(",")[0].trim();
+    body.ip = ip;
+
     const rowValues = headers.map((h) => body[h] ?? "");
     const line = rowValues.map(csvEscape).join(",") + "\n";
 
