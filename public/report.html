@@ -65,143 +65,273 @@
 </div>
 
 <script>
+  /* ------------------------------------------------------------------
+     CONFIG / STATE
+  ------------------------------------------------------------------ */
+  const SERVICE_BASE = window.location.hostname.includes("localhost")
+    ? "http://localhost:3000"
+    : "https://msswidget-dev.onrender.com";
 
-/* ------------------------------------------------------------------
-   CONFIG
------------------------------------------------------------------- */
-const API_BASE = "https://msswidget-dev.onrender.com";  // Render service
-const SERVICE_BASE = window.location.hostname.includes('localhost')
-  ? 'http://localhost:3000'
-  : 'https://msswidget-dev.onrender.com';
+  const mode = SERVICE_BASE.includes("localhost") ? "LOCAL DEV" : "RENDER PROD";
+  console.log(`🧩 MSS Reports running in ${mode} mode`);
 
-/* ------------------------------------------------------------------
-   ENVIRONMENT CHECK (just for debugging)
------------------------------------------------------------------- */
-const mode = SERVICE_BASE.includes('localhost') ? 'LOCAL DEV' : 'RENDER PROD';
-console.log(`🧩 MSS Widget running in ${mode} mode`);
-const $ = id => document.getElementById(id);
-const state = { rows: [], filtered: [] };
+  const $ = (id) => document.getElementById(id);
 
-function hdrs(){
-  const h = {};
-  const k = $('adm').value.trim();
-  if (k) h['X-ADMIN-KEY'] = k;
-  return h;
-}
-function fmtDate(s){
-  if (!s) return '';
-  try{ return new Date(s).toLocaleString(); }catch{ return s; }
-}
-function render(){
-  const qv = $('q').value.trim().toLowerCase();
-  state.filtered = state.rows.filter(r=>{
-    const hay = [
-      r.timestamp, r.fileName, r.cefr, r.toefl, r.ielts, r.question, r.teacher, r.note
-    ].join(" ").toLowerCase();
-    return !qv || hay.includes(qv);
-  });
+  const state = {
+    headers: [],
+    rows: [],
+    filtered: [],
+  };
 
-  const tbody = $('body');
-  if (!state.filtered.length){
-    tbody.innerHTML = `<tr><td colspan="5" class="muted" style="padding:16px">No rows.</td></tr>`;
-    return;
+  /* ------------------------------------------------------------------
+     HELPERS
+  ------------------------------------------------------------------ */
+  function hdrs() {
+    const h = {};
+    const k = $("adm").value.trim();
+    if (k) h["X-ADMIN-KEY"] = k;
+    return h;
   }
-  tbody.innerHTML = state.filtered.map(r=> rowHtml(r)).join('');
-  // wire note buttons
-  for (const r of state.filtered){
-    const btn = document.querySelector(`button[data-save="${cssEsc(r.id)}"]`);
-    const ta  = document.querySelector(`textarea[data-note="${cssEsc(r.id)}"]`);
-    const tchr= document.querySelector(`input[data-teacher="${cssEsc(r.id)}"]`);
-    btn?.addEventListener('click', ()=> saveNote(r.id, tchr.value, ta.value));
+
+  function fmtDate(s) {
+    if (!s) return "";
+    try {
+      return new Date(s).toLocaleString();
+    } catch {
+      return s;
+    }
   }
-}
-function cssEsc(s){ return s.replace(/"/g,'&quot;'); }
 
-function rowHtml(r){
-  const len = r.lengthSec ? ` • ${Number(r.lengthSec).toFixed(0)}s` : '';
-  const scores = [
-    r.toefl ? `TOEFL ${r.toefl}` : '',
-    r.ielts ? `IELTS ${r.ielts}` : '',
-    r.cefr  ? `CEFR ${r.cefr}` : ''
-  ].filter(Boolean).join(' · ');
-
-  const teacher = r.teacher || '';
-  const note = r.note || '';
-
-  return `
-  <tr>
-    <td>
-      <div class="rowhead">
-        <span>${fmtDate(r.timestamp)}</span>
-      </div>
-      <div class="muted">${r.id}</div>
-    </td>
-    <td>
-      <div><b>${r.fileName || '(recorded)'}</b>${len}</div>
-      <div class="muted">${r.extra || ''}</div>
-    </td>
-    <td>${scores || '<span class="muted">—</span>'}</td>
-    <td>${escapeHtml(r.question || '')}</td>
-    <td>
-      <input type="text" placeholder="Teacher" value="${escapeAttr(teacher)}" data-teacher="${cssEsc(r.id)}" style="width:100%;margin-bottom:6px">
-      <textarea placeholder="Notes for student…" data-note="${cssEsc(r.id)}">${escapeHtml(note)}</textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-        <button data-save="${cssEsc(r.id)}" class="primary">Save Note</button>
-      </div>
-    </td>
-  </tr>`;
-}
-
-function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-function escapeAttr(s){ return String(s).replace(/"/g, '&quot;'); }
-
-async function loadRows(){
-  const base = $('base').value.replace(/\/+$/,'');
-  const lim = $('limit').value;
-  $('body').innerHTML = `<tr><td colspan="5" class="muted" style="padding:16px">Loading…</td></tr>`;
-  $('meta').textContent = '';
-
-  const url = `${base}/log/list?limit=${encodeURIComponent(lim)}`;
-  const res = await fetch(url, { headers: hdrs(), cache: 'no-store' });
-  const data = await res.json();
-  if (!res.ok || !data?.ok){
-    $('body').innerHTML = `<tr><td colspan="5" class="warn" style="padding:16px">Load failed.</td></tr>`;
-    return;
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   }
-  state.rows = data.rows || [];
-  render();
-  $('meta').textContent = `${state.rows.length} rows • ${new Date().toLocaleTimeString()}`;
-}
 
-async function saveNote(id, teacher, note){
-  const base = $('base').value.replace(/\/+$/,'');
-  const res = await fetch(`${base}/log/note`, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', ...hdrs() },
-    body: JSON.stringify({ id, teacher, note })
-  });
-  const ok = res.ok;
-  // re-pull to show merged
-  await loadRows();
-  alert(ok ? 'Saved.' : 'Save failed.');
-}
+  function escapeAttr(s) {
+    return String(s).replace(/"/g, "&quot;");
+  }
 
-$('refresh').addEventListener('click', loadRows);
-$('q').addEventListener('input', render);
-$('downloadCsv').addEventListener('click', async ()=>{
-  const base = $('base').value.replace(/\/+$/,'');
-  const res = await fetch(`${base}/log/download`, { headers: hdrs() });
-  if (!res.ok){ alert('Download failed'); return; }
-  const blob = await res.blob();
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'logger.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-});
+  function cssEsc(s) {
+    return String(s).replace(/"/g, "&quot;");
+  }
 
-// boot
-loadRows();
+  function csvEscape(v) {
+    if (v == null) return "";
+    const s = String(v);
+    if (/[",\n]/.test(s)) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  /* ------------------------------------------------------------------
+     RENDERING
+  ------------------------------------------------------------------ */
+  function rowHtml(r) {
+    const len = r.lengthSec ? ` • ${Number(r.lengthSec).toFixed(0)}s` : "";
+    const scores = [
+      r.toefl ? `TOEFL ${r.toefl}` : "",
+      r.ielts ? `IELTS ${r.ielts}` : "",
+      r.cefr ? `CEFR ${r.cefr}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    const teacher = r.teacher || "";
+    const note = r.note || "";
+
+    return `
+      <tr>
+        <td>
+          <div class="rowhead">
+            <span>${fmtDate(r.timestamp)}</span>
+          </div>
+          <div class="muted">${r.id}</div>
+        </td>
+        <td>
+          <div><b>${r.fileName || "(recorded)"}</b>${len}</div>
+          <div class="muted">${r.extra || ""}</div>
+        </td>
+        <td>${scores || '<span class="muted">—</span>'}</td>
+        <td>${escapeHtml(r.question || "")}</td>
+        <td>
+          <input
+            type="text"
+            placeholder="Teacher"
+            value="${escapeAttr(teacher)}"
+            data-teacher="${cssEsc(r.id)}"
+            style="width:100%;margin-bottom:6px"
+          >
+          <textarea
+            placeholder="Notes for student…"
+            data-note="${cssEsc(r.id)}"
+          >${escapeHtml(note)}</textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+            <button data-save="${cssEsc(r.id)}" class="primary">Save Note</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function render() {
+    const qv = $("q").value.trim().toLowerCase();
+    state.filtered = state.rows.filter((r) => {
+      const hay = [
+        r.timestamp,
+        r.fileName,
+        r.cefr,
+        r.toefl,
+        r.ielts,
+        r.question,
+        r.teacher,
+        r.note,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return !qv || hay.includes(qv);
+    });
+
+    const tbody = $("body");
+
+    if (!state.filtered.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="5" class="muted" style="padding:16px">No rows.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = state.filtered.map((r) => rowHtml(r)).join("");
+
+    // wire Save Note buttons
+    for (const r of state.filtered) {
+      const btn = document.querySelector(`button[data-save="${cssEsc(r.id)}"]`);
+      const ta = document.querySelector(`textarea[data-note="${cssEsc(r.id)}"]`);
+      const tchr = document.querySelector(`input[data-teacher="${cssEsc(r.id)}"]`);
+      if (btn && ta && tchr) {
+        btn.addEventListener("click", () =>
+          saveNote(r.id, tchr.value.trim(), ta.value.trim())
+        );
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     LOAD ROWS FROM /log/submissions
+  ------------------------------------------------------------------ */
+  async function loadRows() {
+    const baseInput = $("base").value.trim() || SERVICE_BASE;
+    const base = baseInput.replace(/\/+$/, "");
+    const limit = parseInt($("limit").value, 10) || 100;
+
+    $("body").innerHTML =
+      '<tr><td colspan="5" class="muted" style="padding:16px">Loading…</td></tr>';
+    $("meta").textContent = "";
+
+    try {
+      const res = await fetch(`${base}/log/submissions?ts=${Date.now()}`, {
+        headers: hdrs(),
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const allRows = data.rows || [];
+      state.headers = data.headers || [];
+
+      // Apply "Last N" limit on the client
+      const start = Math.max(0, allRows.length - limit);
+      state.rows = allRows.slice(start);
+
+      render();
+      $("meta").textContent = `${state.rows.length} row(s) • ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+      console.error("loadRows error", err);
+      $("body").innerHTML =
+        '<tr><td colspan="5" class="warn" style="padding:16px">Load failed.</td></tr>';
+      $("meta").textContent = `Error: ${err.message}`;
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     SAVE NOTE VIA PUT /log/submission
+  ------------------------------------------------------------------ */
+  async function saveNote(id, teacher, note) {
+    const baseInput = $("base").value.trim() || SERVICE_BASE;
+    const base = baseInput.replace(/\/+$/, "");
+
+    try {
+      const res = await fetch(`${base}/log/submission`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...hdrs(),
+        },
+        body: JSON.stringify({
+          id,
+          updates: { teacher, note },
+        }),
+      });
+
+      let ok = res.ok;
+      let data = {};
+      try {
+        data = await res.json();
+        if (data && data.ok === false) ok = false;
+      } catch {
+        // ignore JSON parse errors
+      }
+
+      if (!ok) {
+        alert("Save failed.");
+        return;
+      }
+
+      await loadRows();
+      alert("Saved.");
+    } catch (err) {
+      console.error("saveNote error", err);
+      alert("Save failed.");
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     DOWNLOAD CSV (client-side)
+  ------------------------------------------------------------------ */
+  function downloadCsv() {
+    if (!state.headers.length || !state.rows.length) {
+      alert("No data to download.");
+      return;
+    }
+
+    const lines = [];
+    lines.push(state.headers.join(","));
+    state.rows.forEach((row) => {
+      const cols = state.headers.map((h) => csvEscape(row[h] ?? ""));
+      lines.push(cols.join(","));
+    });
+
+    const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "msswidget-log.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  /* ------------------------------------------------------------------
+     WIRE UI + BOOT
+  ------------------------------------------------------------------ */
+  $("refresh").addEventListener("click", loadRows);
+  $("downloadCsv").addEventListener("click", downloadCsv);
+  $("q").addEventListener("input", render);
+  $("limit").addEventListener("change", loadRows);
+
+  // Initial load
+  loadRows();
 </script>
 </body>
 </html>

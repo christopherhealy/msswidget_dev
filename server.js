@@ -1,5 +1,4 @@
 // server.js (ESM, works with "type": "module")
-// server.js (ESM, works with "type": "module")
 import express from "express";
 import cors from "cors";
 import fs from "fs/promises";
@@ -11,10 +10,27 @@ const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
 const SRC_DIR = path.join(ROOT, "src");
 const PUBLIC_DIR = path.join(ROOT, "public");
-const THEMES_DIR = path.join(ROOT, "themes");        // <— NEW
+const THEMES_DIR = path.join(ROOT, "themes");
 
 // CSV log in /tmp (ephemeral on free Render)
 const LOG_CSV = "/tmp/msswidget-log.csv";
+const LOG_HEADERS = [
+  "timestamp",
+  "ip",
+  "userId",
+  "fileName",
+  "lengthSec",
+  "submitTime",
+  "toefl",
+  "ielts",
+  "pte",
+  "cefr",
+  "question",
+  "transcript",
+  "wpm",
+  "teacher",
+  "note",
+];
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 /* ---------- middleware ---------- */
 app.use(
   cors({
-    origin: "*", // fine for dev / admin tools
+    origin: "*",
     methods: ["GET", "POST", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "X-ADMIN-KEY", "API-KEY", "X-API-SECRET"],
   })
@@ -30,26 +46,16 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
+// Static files
 app.use(express.static(PUBLIC_DIR));
+app.use("/themes", express.static(path.join(PUBLIC_DIR, "themes")));
+app.use("/themes", express.static(THEMES_DIR));
 
-// Explicit /themes mount, tries public/themes first, then root/themes
-app.use(
-  "/themes",
-  express.static(path.join(PUBLIC_DIR, "themes"))
-);
-app.use(
-  "/themes",
-  express.static(THEMES_DIR)
-);
 /* ---------- helpers ---------- */
-
 async function ensureSrcDir() {
   try {
     await fs.mkdir(SRC_DIR, { recursive: true });
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 async function readJson(rel, fallback = {}) {
@@ -59,7 +65,6 @@ async function readJson(rel, fallback = {}) {
     const txt = await fs.readFile(full, "utf8");
     return JSON.parse(txt);
   } catch {
-    // create default if missing
     await fs.writeFile(full, JSON.stringify(fallback, null, 2), "utf8");
     return fallback;
   }
@@ -71,8 +76,7 @@ async function writeJson(rel, obj) {
   await fs.writeFile(full, JSON.stringify(obj ?? {}, null, 2), "utf8");
 }
 
-/* ---------- default shapes ---------- */
-
+/* ---------- defaults ---------- */
 const defaultForm = {
   headline: "Practice TOEFL Speaking Test",
   recordButton: "Record your response",
@@ -99,31 +103,18 @@ const defaultConfig = {
     SubmitForScoringButton: true,
   },
   theme: "apple",
-  api: {
-    enabled: true,
-    baseUrl: "",
-    key: "",
-    secret: "",
-  },
-  logger: {
-    enabled: false,
-    url: "",
-  },
+  api: { enabled: true, baseUrl: "", key: "", secret: "" },
+  logger: { enabled: false, url: "" },
   audioMinSeconds: 30,
   audioMaxSeconds: 61,
 };
 
-const defaultImages = {
-  logoDataUrl: "",
-};
+const defaultImages = { logoDataUrl: "" };
 
-/* ---------- ADMIN KEY (optional) ---------- */
-// You can add this to Render env later, e.g. ADMIN_WRITE_KEY=mysecret
+/* ---------- ADMIN KEY ---------- */
 const ADMIN_WRITE_KEY = process.env.ADMIN_WRITE_KEY || "";
-
-// simple guard
 function checkAdminKey(req, res) {
-  if (!ADMIN_WRITE_KEY) return true; // no key set → allow all (dev mode)
+  if (!ADMIN_WRITE_KEY) return true;
   const header = req.header("X-ADMIN-KEY");
   if (header && header === ADMIN_WRITE_KEY) return true;
   res.status(401).json({ ok: false, error: "admin unauthorized" });
@@ -131,8 +122,6 @@ function checkAdminKey(req, res) {
 }
 
 /* ---------- CONFIG ROUTES ---------- */
-
-// FORMS (form.json)
 app.get("/config/forms", async (req, res) => {
   try {
     const data = await readJson("form.json", defaultForm);
@@ -146,8 +135,7 @@ app.get("/config/forms", async (req, res) => {
 app.put("/config/forms", async (req, res) => {
   if (!checkAdminKey(req, res)) return;
   try {
-    const body = req.body && typeof req.body === "object" ? req.body : {};
-    await writeJson("form.json", body);
+    await writeJson("form.json", req.body || {});
     res.json({ ok: true });
   } catch (e) {
     console.error("PUT /config/forms error:", e);
@@ -155,7 +143,6 @@ app.put("/config/forms", async (req, res) => {
   }
 });
 
-// WIDGET CONFIG (config.json)
 app.get("/config/widget", async (req, res) => {
   try {
     const data = await readJson("config.json", defaultConfig);
@@ -169,8 +156,7 @@ app.get("/config/widget", async (req, res) => {
 app.put("/config/widget", async (req, res) => {
   if (!checkAdminKey(req, res)) return;
   try {
-    const body = req.body && typeof req.body === "object" ? req.body : {};
-    await writeJson("config.json", body);
+    await writeJson("config.json", req.body || {});
     res.json({ ok: true });
   } catch (e) {
     console.error("PUT /config/widget error:", e);
@@ -178,7 +164,6 @@ app.put("/config/widget", async (req, res) => {
   }
 });
 
-// IMAGES (image.json)
 app.get("/config/images", async (req, res) => {
   try {
     const data = await readJson("image.json", defaultImages);
@@ -192,8 +177,7 @@ app.get("/config/images", async (req, res) => {
 app.put("/config/images", async (req, res) => {
   if (!checkAdminKey(req, res)) return;
   try {
-    const body = req.body && typeof req.body === "object" ? req.body : {};
-    await writeJson("image.json", body);
+    await writeJson("image.json", req.body || {});
     res.json({ ok: true });
   } catch (e) {
     console.error("PUT /config/images error:", e);
@@ -202,70 +186,40 @@ app.put("/config/images", async (req, res) => {
 });
 
 /* ---------- LOGGING ENDPOINT ---------- */
-
 function csvEscape(v) {
   if (v == null) return "";
   const s = String(v);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-// simple CSV parser that understands quotes, commas, and escaped quotes
 function parseCsvLine(line) {
   const out = [];
   let cur = "";
   let inQuotes = false;
-
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-
     if (inQuotes) {
       if (ch === '"') {
         if (line[i + 1] === '"') {
-          // escaped quote
           cur += '"';
           i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        cur += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        out.push(cur);
-        cur = "";
-      } else {
-        cur += ch;
-      }
-    }
+        } else inQuotes = false;
+      } else cur += ch;
+    } else if (ch === '"') inQuotes = true;
+    else if (ch === ",") {
+      out.push(cur);
+      cur = "";
+    } else cur += ch;
   }
-
   out.push(cur);
   return out;
 }
 
+// APPEND new log
 app.post("/log/submission", async (req, res) => {
   try {
     const body = req.body || {};
-    const headers = [
-      "timestamp",
-      "ip",
-      "userId",
-      "fileName",
-      "lengthSec",
-      "submitTime",
-      "toefl",
-      "ielts",
-      "pte",
-      "cefr",
-      "question",
-      "transcript",
-      "wpm",
-    ];
-
+    const headers = LOG_HEADERS;
     const rowValues = headers.map((h) => body[h] ?? "");
     const line = rowValues.map(csvEscape).join(",") + "\n";
 
@@ -273,54 +227,39 @@ app.post("/log/submission", async (req, res) => {
     try {
       await fs.access(LOG_CSV);
     } catch {
-      // file doesn’t exist → write header first
       prefix = headers.join(",") + "\n";
     }
-
     await fs.appendFile(LOG_CSV, prefix + line, "utf8");
-
-    res.json({ ok: true, file: LOG_CSV });
+    res.json({ ok: true });
   } catch (e) {
     console.error("POST /log/submission error:", e);
     res.status(500).json({ ok: false, error: "log failed" });
   }
 });
 
-// READ log as JSON for admin report UI
+// READ all logs
 app.get("/log/submissions", async (req, res) => {
   try {
     let csv;
     try {
       csv = await fs.readFile(LOG_CSV, "utf8");
     } catch {
-      // no log file yet
       return res.json({ headers: [], rows: [] });
     }
-
     const trimmed = csv.trim();
-    if (!trimmed) {
-      return res.json({ headers: [], rows: [] });
-    }
+    if (!trimmed) return res.json({ headers: [], rows: [] });
 
     const lines = trimmed.split(/\r?\n/);
-    if (!lines.length) {
-      return res.json({ headers: [], rows: [] });
-    }
-
     const headers = parseCsvLine(lines[0]);
-
     const rows = lines
       .slice(1)
-      .filter((l) => l.trim() !== "")
+      .filter((l) => l.trim())
       .map((line, idx) => {
         const cols = parseCsvLine(line);
-        const row = { id: idx }; // row index in the CSV
-        headers.forEach((h, i) => {
-          row[h] = cols[i] ?? "";
-        });
+        const row = { id: idx };
+        headers.forEach((h, i) => (row[h] = cols[i] ?? ""));
         return row;
       });
-
     res.json({ headers, rows });
   } catch (e) {
     console.error("GET /log/submissions error:", e);
@@ -328,14 +267,54 @@ app.get("/log/submissions", async (req, res) => {
   }
 });
 
-/* ---------- simple root ---------- */
+// UPDATE single log row
+app.put("/log/submission", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const id = Number(body.id);
+    const updates = body.updates || {};
+    if (!Number.isInteger(id) || id < 0)
+      return res.status(400).json({ ok: false, error: "invalid id" });
 
+    let csv;
+    try {
+      csv = await fs.readFile(LOG_CSV, "utf8");
+    } catch {
+      return res.status(404).json({ ok: false, error: "log not found" });
+    }
+
+    const lines = csv.trim().split(/\r?\n/);
+    if (lines.length < 2)
+      return res.status(400).json({ ok: false, error: "log empty" });
+
+    const headers = parseCsvLine(lines[0]);
+    const rows = lines.slice(1).map(parseCsvLine);
+    if (id >= rows.length)
+      return res.status(400).json({ ok: false, error: "out of range" });
+
+    const current = rows[id];
+    const rowObj = {};
+    headers.forEach((h, i) => (rowObj[h] = current[i] ?? ""));
+    Object.entries(updates).forEach(([k, v]) => {
+      if (headers.includes(k)) rowObj[k] = v == null ? "" : String(v);
+    });
+
+    rows[id] = headers.map((h) => rowObj[h] ?? "");
+    const out = [headers.join(","), ...rows.map((r) => r.map(csvEscape).join(","))];
+    await fs.writeFile(LOG_CSV, out.join("\n") + "\n", "utf8");
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("PUT /log/submission error:", e);
+    res.status(500).json({ ok: false, error: "update failed" });
+  }
+});
+
+/* ---------- health ---------- */
 app.get("/health", (req, res) => {
   res.json({ ok: true, uptime: process.uptime() });
 });
 
-/* ---------- start server ---------- */
-
+/* ---------- start ---------- */
 app.listen(PORT, () => {
   console.log(`✅ MSS Widget service listening on port ${PORT}`);
 });
